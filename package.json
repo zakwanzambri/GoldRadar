@@ -1,0 +1,36 @@
+{
+  "name": "gold-breakout-scanner",
+  "version": "1.0.0",
+  "description": "Real-time XAU/USD breakout detection and analysis tool",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx http-server . -p 3000 -o",
+    "dev": "npx live-server --port=3000 --open=/index.html",
+    "build": "echo 'No build process needed for this static site'",
+    "test": "echo 'No tests specified'"
+  },
+  "keywords": [
+    "gold",
+    "trading",
+    "breakout",
+    "xauusd",
+    "technical-analysis",
+    "chart",
+    "forex"
+  ],
+  "author": "Gold Radar Team",
+  "license": "MIT",
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "live-server": "^1.2.2"
+  },
+  "dependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/gold-breakout-scanner.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/gold-breakout-scanner/issues"
+  },
+  "homepage": "https://github.com/your-username/gold-breakout-scanner#readme"
+}
