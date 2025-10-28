@@ -241,20 +241,18 @@
     <script>
         // Initialize the application with routing system
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize router
+            // Initialize router and navigation
             const router = new GoldRadarRouter();
-            
-            // Initialize navigation
             const navigation = new Navigation(router);
             document.getElementById('navigation-container').innerHTML = navigation.render();
             navigation.init();
             
-            // Register pages
-            router.addRoute('home', HomePage);
-            router.addRoute('scanner', ScannerPage);
-            router.addRoute('alerts', AlertsPage);
-            router.addRoute('backtest', BacktestPage);
-            router.addRoute('about', AboutPage);
+            // Register all pages with optimization options
+            router.register('/home', HomePage, 'Home', { preload: true, cache: true });
+            router.register('/scanner', ScannerPage, 'Scanner', { preload: true, cache: true });
+            router.register('/alerts', AlertsPage, 'Alerts', { cache: true });
+            router.register('/backtest', BacktestPage, 'Backtest', { cache: true });
+            router.register('/about', AboutPage, 'About', { cache: false }); // About page doesn't need caching
             
             // Start the router
             router.init();
