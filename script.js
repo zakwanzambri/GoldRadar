@@ -23,6 +23,18 @@ class GoldBreakoutScanner {
         this.lastUpdateTime = 0;
         this.updateThrottle = 50; // Minimum 50ms between DOM updates
         
+        // WebSocket simulation for real-time streaming
+        this.wsSimulation = null;
+        this.streamingData = true;
+        this.tickBuffer = [];
+        this.maxBufferSize = 100;
+        
+        // Chart update optimization
+        this.chartUpdateQueue = [];
+        this.isChartUpdating = false;
+        this.lastChartUpdate = 0;
+        this.chartUpdateThrottle = 100; // Minimum 100ms between chart updates
+        
         this.init();
     }
 
@@ -73,11 +85,31 @@ class GoldBreakoutScanner {
             },
             rightPriceScale: {
                 borderColor: 'rgba(255, 255, 255, 0.3)',
+                scaleMargins: {
+                    top: 0.1,
+                    bottom: 0.1,
+                },
             },
             timeScale: {
                 borderColor: 'rgba(255, 255, 255, 0.3)',
                 timeVisible: true,
                 secondsVisible: false,
+                rightOffset: 12,
+                barSpacing: 3,
+                fixLeftEdge: true,
+                lockVisibleTimeRangeOnResize: true,
+            },
+            // Performance optimizations
+            handleScroll: {
+                mouseWheel: true,
+                pressedMouseMove: true,
+                horzTouchDrag: true,
+                vertTouchDrag: true,
+            },
+            handleScale: {
+                axisPressedMouseMove: true,
+                mouseWheel: true,
+                pinch: true,
             },
         });
 
@@ -168,6 +200,7 @@ class GoldBreakoutScanner {
             await this.loadHistoricalData();
             
             // Start real-time updates
+            this.startWebSocketSimulation();
             this.startRealTimeUpdates();
             
         } catch (error) {
@@ -183,6 +216,64 @@ class GoldBreakoutScanner {
                 resolve();
             }, 2000);
         });
+    }
+    
+    startWebSocketSimulation() {
+        // Simulate WebSocket connection for real-time tick data
+        this.wsSimulation = setInterval(() => {
+            if (this.streamingData && this.priceData.length > 0) {
+                const tick = this.generateTick();
+                this.processTick(tick);
+            }
+        }, 100); // Generate ticks every 100ms for real-time feel
+    }
+    
+    generateTick() {
+        const lastCandle = this.priceData[this.priceData.length - 1];
+        const basePrice = lastCandle ? lastCandle.close : 2000;
+        
+        // Generate realistic tick data with micro-movements
+        const volatility = 0.0002; // 0.02% volatility per tick
+        const change = (Math.random() - 0.5) * volatility * basePrice;
+        const newPrice = basePrice + change;
+        
+        return {
+            price: newPrice,
+            timestamp: Date.now(),
+            volume: Math.floor(Math.random() * 100 + 10),
+            bid: newPrice - (Math.random() * 0.5 + 0.2),
+            ask: newPrice + (Math.random() * 0.5 + 0.2)
+        };
+    }
+    
+    processTick(tick) {
+        // Add to buffer for processing
+        this.tickBuffer.push(tick);
+        
+        // Keep buffer size manageable
+        if (this.tickBuffer.length > this.maxBufferSize) {
+            this.tickBuffer.shift();
+        }
+        
+        // Update price display immediately for real-time feel
+        this.updatePriceDisplay(tick.price);
+        
+        // Update spread based on bid/ask
+        this.queueDOMUpdate('spread-update', () => {
+            const spreadEl = document.getElementById('spread');
+            if (spreadEl) {
+                const spread = (tick.ask - tick.bid).toFixed(1);
+                spreadEl.textContent = spread;
+            }
+        });
+    }
+    
+    stopWebSocketSimulation() {
+        if (this.wsSimulation) {
+            clearInterval(this.wsSimulation);
+            this.wsSimulation = null;
+        }
+        this.streamingData = false;
     }
 
     async loadHistoricalData() {
@@ -230,6 +321,50 @@ class GoldBreakoutScanner {
         return data;
     }
 
+    // Optimized chart update system
+    queueChartUpdate(updateFunction) {
+        this.chartUpdateQueue.push(updateFunction);
+        this.scheduleChartUpdate();
+    }
+    
+    scheduleChartUpdate() {
+        if (this.isChartUpdating) return;
+        
+        const now = Date.now();
+        const timeSinceLastUpdate = now - this.lastChartUpdate;
+        
+        if (timeSinceLastUpdate >= this.chartUpdateThrottle) {
+            this.processChartUpdates();
+        } else {
+            setTimeout(() => {
+                if (!this.isChartUpdating) {
+                    this.processChartUpdates();
+                }
+            }, this.chartUpdateThrottle - timeSinceLastUpdate);
+        }
+    }
+    
+    processChartUpdates() {
+        if (this.chartUpdateQueue.length === 0) return;
+        
+        this.isChartUpdating = true;
+        
+        // Process all queued chart updates in a single frame
+        requestAnimationFrame(() => {
+            try {
+                for (const updateFunction of this.chartUpdateQueue) {
+                    updateFunction();
+                }
+            } catch (error) {
+                console.warn('Chart update failed:', error);
+            }
+            
+            this.chartUpdateQueue.length = 0;
+            this.lastChartUpdate = Date.now();
+            this.isChartUpdating = false;
+        });
+    }
+
     startRealTimeUpdates() {
         // High-frequency price updates for real-time feel
         setInterval(() => {
@@ -245,12 +380,18 @@ class GoldBreakoutScanner {
             }
         }, 500); // Update price every 0.5 seconds for real-time feel
         
-        // Candle updates based on timeframe
+        // Candle updates based on timeframe with optimized rendering
         setInterval(() => {
             if (this.isConnected && this.priceData.length > 0) {
                 const newCandle = this.generateNewCandle();
                 this.priceData.push(newCandle);
-                this.candlestickSeries.update(newCandle);
+                
+                // Queue chart update for optimized rendering
+                this.queueChartUpdate(() => {
+                    if (this.candlestickSeries) {
+                        this.candlestickSeries.update(newCandle);
+                    }
+                });
                 
                 // Keep only last 200 candles for performance
                 if (this.priceData.length > 200) {
@@ -571,20 +712,70 @@ class GoldBreakoutScanner {
         confidenceFill.style.width = `${confidence}%`;
     }
 
-    updatePriceDisplay(price) {
-        const currentPriceEl = document.getElementById('current-price');
-        const priceChangeEl = document.getElementById('price-change');
+    // Efficient DOM update system with batching
+    queueDOMUpdate(elementId, updateFunction) {
+        this.updateQueue.set(elementId, updateFunction);
+        this.scheduleBatchUpdate();
+    }
+    
+    scheduleBatchUpdate() {
+        if (this.isUpdating) return;
         
+        const now = Date.now();
+        const timeSinceLastUpdate = now - this.lastUpdateTime;
+        
+        if (timeSinceLastUpdate >= this.updateThrottle) {
+            this.processBatchUpdate();
+        } else {
+            setTimeout(() => {
+                if (!this.isUpdating) {
+                    this.processBatchUpdate();
+                }
+            }, this.updateThrottle - timeSinceLastUpdate);
+        }
+    }
+    
+    processBatchUpdate() {
+        if (this.updateQueue.size === 0) return;
+        
+        this.isUpdating = true;
+        
+        // Use requestAnimationFrame for smooth updates
+        requestAnimationFrame(() => {
+            // Process all queued updates in a single frame
+            for (const [elementId, updateFunction] of this.updateQueue) {
+                try {
+                    updateFunction();
+                } catch (error) {
+                    console.warn(`DOM update failed for ${elementId}:`, error);
+                }
+            }
+            
+            this.updateQueue.clear();
+            this.lastUpdateTime = Date.now();
+            this.isUpdating = false;
+        });
+    }
+
+    updatePriceDisplay(price) {
         const change = price - this.lastPrice;
         const changePercent = this.lastPrice > 0 ? (change / this.lastPrice) * 100 : 0;
         
-        currentPriceEl.textContent = `$${price.toFixed(2)}`;
-        
-        if (change !== 0) {
-            const sign = change > 0 ? '+' : '';
-            priceChangeEl.textContent = `${sign}${change.toFixed(2)} (${sign}${changePercent.toFixed(2)}%)`;
-            priceChangeEl.className = change > 0 ? 'change positive' : 'change negative';
-        }
+        // Queue price display updates for batch processing
+        this.queueDOMUpdate('price-display', () => {
+            const currentPriceEl = document.getElementById('current-price');
+            const priceChangeEl = document.getElementById('price-change');
+            
+            if (currentPriceEl) {
+                currentPriceEl.textContent = `$${price.toFixed(2)}`;
+            }
+            
+            if (priceChangeEl && change !== 0) {
+                const sign = change > 0 ? '+' : '';
+                priceChangeEl.textContent = `${sign}${change.toFixed(2)} (${sign}${changePercent.toFixed(2)}%)`;
+                priceChangeEl.className = change > 0 ? 'change positive' : 'change negative';
+            }
+        });
         
         this.lastPrice = price;
     }
@@ -595,9 +786,16 @@ class GoldBreakoutScanner {
         const volume = Math.floor(Math.random() * 1000000 + 500000);
         const atr = (Math.random() * 10 + 5).toFixed(1);
         
-        document.getElementById('spread').textContent = spread;
-        document.getElementById('volume').textContent = volume.toLocaleString();
-        document.getElementById('atr').textContent = atr;
+        // Queue market info updates for batch processing
+        this.queueDOMUpdate('market-info', () => {
+            const spreadEl = document.getElementById('spread');
+            const volumeEl = document.getElementById('volume');
+            const atrEl = document.getElementById('atr');
+            
+            if (spreadEl) spreadEl.textContent = spread;
+            if (volumeEl) volumeEl.textContent = volume.toLocaleString();
+            if (atrEl) atrEl.textContent = atr;
+        });
     }
 
     updateConnectionStatus(connected) {
