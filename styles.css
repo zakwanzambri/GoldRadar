@@ -1,8 +1,57 @@
-/* Reset and Base Styles */
+/* Reset and Base/* Global Styles */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+}
+
+/* App Container Styles */
+.app-container {
+    min-height: 100vh;
+    padding-top: 70px; /* Account for fixed navigation */
+    background: var(--bg-primary);
+}
+
+.page-container {
+    min-height: calc(100vh - 70px);
+    padding: 20px;
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+/* Page Transition Animations */
+.page-enter {
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.page-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: all 0.3s ease;
+}
+
+.page-exit {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.page-exit-active {
+    opacity: 0;
+    transform: translateY(-20px);
+    transition: all 0.3s ease;
+}
+
+/* Responsive adjustments for app container */
+@media (max-width: 768px) {
+    .app-container {
+        padding-top: 60px; /* Account for smaller mobile navigation */
+    }
+    
+    .page-container {
+        min-height: calc(100vh - 60px);
+        padding: 15px;
+    }
 }
 
 body {
