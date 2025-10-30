@@ -36,8 +36,8 @@ class SPAHandler(http.server.SimpleHTTPRequestHandler):
             super().do_GET()
             return
             
-        # For SPA routes (like /home, /scanner, etc.), serve index.html
-        spa_routes = ['/home', '/scanner', '/alerts', '/backtest', '/about']
+        # For SPA routes (like /home, /dashboard, /scanner, etc.), serve index.html
+spa_routes = ['/home', '/dashboard', '/scanner', '/alerts', '/backtest', '/about']
         if any(clean_path.startswith(route) for route in spa_routes):
             self.serve_index()
             return

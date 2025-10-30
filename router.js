@@ -17,8 +17,7 @@ class GoldRadarRouter {
             navigationCount: 0
         };
         
-        // Initialize router
-        this.init();
+        // Don't auto-initialize - let the app initialize after registering routes
     }
 
     init() {
@@ -57,10 +56,10 @@ class GoldRadarRouter {
             // Update the hash to maintain consistency
             window.location.hash = '#' + currentPath;
         }
-        // Default to home
+        // Default to dashboard
         else {
-            initialRoute = '/home';
-            window.location.hash = '#/home';
+            initialRoute = '/dashboard';
+            window.location.hash = '#/dashboard';
         }
         
         this.handleRoute(initialRoute);
@@ -101,6 +100,7 @@ class GoldRadarRouter {
     }
 
     register(path, pageClass, title = '', options = {}) {
+        console.log(`Registering route: ${path}`); // Debug logging
         this.routes.set(path, {
             pageClass: pageClass,
             title: title,
@@ -108,17 +108,21 @@ class GoldRadarRouter {
             preload: options.preload || false,
             cache: options.cache !== false // Default to true
         });
+        console.log(`Routes registered:`, Array.from(this.routes.keys())); // Debug logging
     }
 
     async preloadCriticalPages() {
-        // Preload home page and other critical pages
-        const criticalPaths = ['/home', '/scanner'];
+        // Preload dashboard page and other critical pages
+        const criticalPaths = ['/dashboard', '/scanner'];
         
         for (const path of criticalPaths) {
             const route = this.routes.get(path);
             if (route && route.preload && !this.pageCache.has(path)) {
                 try {
-                    const pageInstance = new route.pageClass();
+                    // Support both class constructors and factory functions
+                    const pageInstance = typeof route.pageClass === 'function' && route.pageClass.prototype 
+                        ? new route.pageClass() 
+                        : route.pageClass();
                     if (route.cache) {
                         this.pageCache.set(path, pageInstance);
                     }
@@ -144,20 +148,20 @@ class GoldRadarRouter {
         const startTime = performance.now();
         this.performanceMetrics.navigationCount++;
         
-        // Default to home if path is root
+        // Default to dashboard if path is root
         if (path === '/' || path === '') {
-            path = '/home';
+            path = '/dashboard';
         }
 
         const route = this.routes.get(path);
         
         if (!route) {
             console.warn(`Route not found: ${path}`);
-            // Prevent infinite loop - only fallback if not already trying to go to home
-            if (path !== '/home') {
-                this.handleRoute('/home');
+            // Prevent infinite loop - only fallback if not already trying to go to dashboard
+            if (path !== '/dashboard') {
+                this.handleRoute('/dashboard');
             } else {
-                console.error('Home route not found! Cannot fallback.');
+                console.error('Dashboard route not found! Cannot fallback.');
             }
             return;
         }
@@ -182,7 +186,10 @@ class GoldRadarRouter {
                     pageInstance.reinit();
                 }
             } else {
-                pageInstance = new route.pageClass();
+                // Support both class constructors and factory functions
+                pageInstance = typeof route.pageClass === 'function' && route.pageClass.prototype 
+                    ? new route.pageClass() 
+                    : route.pageClass();
                 if (route.cache) {
                     this.pageCache.set(path, pageInstance);
                 }
@@ -241,9 +248,9 @@ class GoldRadarRouter {
             
         } catch (error) {
             console.error(`Error loading page ${path}:`, error);
-            // Fallback to home on error
-            if (path !== '/home') {
-                this.navigate('/home');
+            // Fallback to dashboard on error
+            if (path !== '/dashboard') {
+                this.navigate('/dashboard');
             }
         } finally {
             clearTimeout(loadingTimeout);

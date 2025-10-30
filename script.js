@@ -35,6 +35,10 @@ class GoldBreakoutScanner {
         this.lastChartUpdate = 0;
         this.chartUpdateThrottle = 100; // Minimum 100ms between chart updates
         
+        // Real-time update intervals
+        this.priceUpdateInterval = null;
+        this.candleUpdateInterval = null;
+        
         this.init();
     }
 
@@ -59,103 +63,108 @@ class GoldBreakoutScanner {
     }
 
     initChart() {
-        const chartContainer = document.getElementById('chart');
-        
-        // Check if LightweightCharts is available
-        if (!window.LightweightCharts) {
-            console.error('LightweightCharts library not loaded');
-            chartContainer.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #fff;">Chart library loading... Please refresh if this persists.</div>';
-            return;
-        }
-        
         try {
-            // Ensure minimum dimensions to prevent negative height
-            const containerWidth = Math.max(chartContainer.clientWidth || 800, 400);
-            const containerHeight = Math.max(chartContainer.clientHeight || 400, 300);
-            const chartHeight = Math.max(containerHeight - 50, 250);
-            
-            this.chart = window.LightweightCharts.createChart(chartContainer, {
-            width: containerWidth,
-            height: chartHeight,
-            layout: {
-                background: { color: 'transparent' },
-                textColor: '#ffffff',
-            },
-            grid: {
-                vertLines: { color: 'rgba(255, 255, 255, 0.1)' },
-                horzLines: { color: 'rgba(255, 255, 255, 0.1)' },
-            },
-            crosshair: {
-                mode: 1, // Normal crosshair mode
-            },
-            rightPriceScale: {
-                borderColor: 'rgba(255, 255, 255, 0.3)',
-                scaleMargins: {
-                    top: 0.1,
-                    bottom: 0.1,
+            // Check if LightweightCharts is available
+            if (typeof LightweightCharts === 'undefined') {
+                console.error('LightweightCharts library not loaded');
+                return;
+            }
+
+            const chartContainer = document.getElementById('chart');
+            if (!chartContainer) {
+                console.error('Chart container not found');
+                return;
+            }
+
+            // Get container dimensions with fallback
+            const containerRect = chartContainer.getBoundingClientRect();
+            const width = Math.max(containerRect.width || 800, 400);
+            const height = Math.max(containerRect.height || 400, 300);
+
+            console.log('Initializing chart with dimensions:', { width, height });
+
+            // Create chart with proper error handling
+            this.chart = LightweightCharts.createChart(chartContainer, {
+                width: width,
+                height: height,
+                layout: {
+                    backgroundColor: 'transparent',
+                    textColor: '#d1d4dc',
                 },
-            },
-            timeScale: {
-                borderColor: 'rgba(255, 255, 255, 0.3)',
-                timeVisible: true,
-                secondsVisible: false,
-                rightOffset: 12,
-                barSpacing: 3,
-                fixLeftEdge: true,
-                lockVisibleTimeRangeOnResize: true,
-            },
-            // Performance optimizations
-            handleScroll: {
-                mouseWheel: true,
-                pressedMouseMove: true,
-                horzTouchDrag: true,
-                vertTouchDrag: true,
-            },
-            handleScale: {
-                axisPressedMouseMove: true,
-                mouseWheel: true,
-                pinch: true,
-            },
-        });
+                grid: {
+                    vertLines: {
+                        color: 'rgba(42, 46, 57, 0.5)',
+                    },
+                    horzLines: {
+                        color: 'rgba(42, 46, 57, 0.5)',
+                    },
+                },
+                rightPriceScale: {
+                    borderColor: 'rgba(197, 203, 206, 0.8)',
+                },
+                timeScale: {
+                    borderColor: 'rgba(197, 203, 206, 0.8)',
+                    timeVisible: true,
+                    secondsVisible: false,
+                },
+                crosshair: {
+                    mode: LightweightCharts.CrosshairMode.Normal,
+                },
+                handleScroll: {
+                    mouseWheel: true,
+                    pressedMouseMove: true,
+                },
+                handleScale: {
+                    axisPressedMouseMove: true,
+                    mouseWheel: true,
+                    pinch: true,
+                },
+            });
 
-        this.candlestickSeries = this.chart.addCandlestickSeries({
-            upColor: '#4CAF50',
-            downColor: '#f44336',
-            borderDownColor: '#f44336',
-            borderUpColor: '#4CAF50',
-            wickDownColor: '#f44336',
-            wickUpColor: '#4CAF50',
-        });
+            // Create candlestick series
+            this.candlestickSeries = this.chart.addCandlestickSeries({
+                upColor: '#26a69a',
+                downColor: '#ef5350',
+                borderVisible: false,
+                wickUpColor: '#26a69a',
+                wickDownColor: '#ef5350',
+            });
 
-        // Add support/resistance lines
-        this.supportLine = this.chart.addLineSeries({
-            color: '#2196F3',
-            lineWidth: 2,
-            lineStyle: 2, // Dashed line style
-        });
+            // Add volume series
+            this.volumeSeries = this.chart.addHistogramSeries({
+                color: '#26a69a',
+                priceFormat: {
+                    type: 'volume',
+                },
+                priceScaleId: '',
+                scaleMargins: {
+                    top: 0.8,
+                    bottom: 0,
+                },
+            });
 
-        this.resistanceLine = this.chart.addLineSeries({
-            color: '#FF9800',
-            lineWidth: 2,
-            lineStyle: 2, // Dashed line style
-        });
-
-            // Handle resize
-            window.addEventListener('resize', () => {
-                if (this.chart) {
-                    const containerWidth = Math.max(chartContainer.clientWidth || 800, 400);
-                    const containerHeight = Math.max(chartContainer.clientHeight || 400, 300);
-                    const chartHeight = Math.max(containerHeight - 50, 250);
-                    
+            // Handle window resize
+            const resizeObserver = new ResizeObserver(entries => {
+                if (this.chart && entries.length > 0) {
+                    const { width, height } = entries[0].contentRect;
                     this.chart.applyOptions({
-                        width: containerWidth,
-                        height: chartHeight,
+                        width: Math.max(width, 400),
+                        height: Math.max(height, 300)
                     });
                 }
             });
+            
+            resizeObserver.observe(chartContainer);
+
+            console.log('Chart initialized successfully');
+            
         } catch (error) {
             console.error('Error initializing chart:', error);
-            chartContainer.innerHTML = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #fff;">Error loading chart. Please refresh the page.</div>';
+            // Show fallback message to user
+            const chartContainer = document.getElementById('chart');
+            if (chartContainer) {
+                chartContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Chart initialization failed. Please refresh the page.</div>';
+            }
         }
     }
 
@@ -201,16 +210,43 @@ class GoldBreakoutScanner {
 
     async startDataFeed() {
         try {
-            // Simulate connection to data feed
-            await this.simulateConnection();
-            this.updateConnectionStatus(true);
+            console.log('Starting data feed...');
             
-            // Load initial historical data
+            // Update connection status
+            this.updateConnectionStatus(false);
+            
+            // Simulate connection process
+            await this.simulateConnection();
+            
+            // Wait for chart to be fully initialized
+            let retries = 0;
+            const maxRetries = 20;
+            
+            while ((!this.chart || !this.candlestickSeries) && retries < maxRetries) {
+                console.log(`Waiting for chart to be ready... (${retries + 1}/${maxRetries})`);
+                await new Promise(resolve => setTimeout(resolve, 200));
+                retries++;
+            }
+            
+            if (!this.chart || !this.candlestickSeries) {
+                console.error('Chart not ready after waiting, cannot start data feed');
+                this.updateConnectionStatus(false);
+                return;
+            }
+            
+            // Load historical data first
             await this.loadHistoricalData();
             
-            // Start real-time updates
+            // Start WebSocket simulation
             this.startWebSocketSimulation();
+            
+            // Start real-time updates
             this.startRealTimeUpdates();
+            
+            // Update connection status to connected
+            this.updateConnectionStatus(true);
+            
+            console.log('Data feed started successfully');
             
         } catch (error) {
             console.error('Failed to start data feed:', error);
@@ -286,24 +322,71 @@ class GoldBreakoutScanner {
     }
 
     async loadHistoricalData() {
-        // Simulate loading historical data
-        const data = this.generateSimulatedData(100);
-        this.priceData = data;
-        
-        // Only set data if candlestickSeries is properly initialized
-        if (this.candlestickSeries && typeof this.candlestickSeries.setData === 'function') {
-            this.candlestickSeries.setData(data);
-        } else {
-            console.warn('Candlestick series not initialized, skipping data load');
-        }
-        
-        // Calculate support and resistance
-        this.calculateSupportResistance();
-        
-        // Update current price display
-        if (data.length > 0) {
-            const lastCandle = data[data.length - 1];
-            this.updatePriceDisplay(lastCandle.close);
+        try {
+            console.log('Loading historical data...');
+            
+            // Wait for chart to be initialized
+            let retries = 0;
+            const maxRetries = 10;
+            
+            while ((!this.chart || !this.candlestickSeries) && retries < maxRetries) {
+                console.log(`Waiting for chart initialization... (${retries + 1}/${maxRetries})`);
+                await new Promise(resolve => setTimeout(resolve, 100));
+                retries++;
+            }
+            
+            if (!this.chart || !this.candlestickSeries) {
+                console.error('Chart not initialized after waiting');
+                return;
+            }
+            
+            // Generate simulated data
+            const data = this.generateSimulatedData(100);
+            this.priceData = data;
+            
+            console.log('Generated data points:', data.length);
+            console.log('Sample data:', data.slice(0, 3));
+            
+            // Set data to candlestick series
+            if (this.candlestickSeries && typeof this.candlestickSeries.setData === 'function') {
+                this.candlestickSeries.setData(data);
+                console.log('Data loaded to candlestick series successfully');
+            } else {
+                console.error('Candlestick series not properly initialized');
+                return;
+            }
+            
+            // Generate and set volume data
+            const volumeData = data.map(candle => ({
+                time: candle.time,
+                value: Math.floor(Math.random() * 1000000) + 500000, // Random volume
+                color: candle.close >= candle.open ? '#26a69a' : '#ef5350'
+            }));
+            
+            if (this.volumeSeries && typeof this.volumeSeries.setData === 'function') {
+                this.volumeSeries.setData(volumeData);
+                console.log('Volume data loaded successfully');
+            }
+            
+            // Calculate support and resistance
+            this.calculateSupportResistance();
+            
+            // Update current price display
+            if (data.length > 0) {
+                const lastCandle = data[data.length - 1];
+                this.updatePriceDisplay(lastCandle.close);
+                console.log('Current price updated:', lastCandle.close);
+            }
+            
+            // Fit chart content
+            if (this.chart && typeof this.chart.timeScale === 'function') {
+                this.chart.timeScale().fitContent();
+            }
+            
+            console.log('Historical data loading completed successfully');
+            
+        } catch (error) {
+            console.error('Error loading historical data:', error);
         }
     }
 
@@ -338,12 +421,18 @@ class GoldBreakoutScanner {
 
     // Optimized chart update system
     queueChartUpdate(updateFunction) {
+        if (!updateFunction || typeof updateFunction !== 'function') {
+            console.warn('Invalid update function provided to queueChartUpdate');
+            return;
+        }
+        
         this.chartUpdateQueue.push(updateFunction);
         this.scheduleChartUpdate();
     }
     
     scheduleChartUpdate() {
-        if (this.isChartUpdating) return;
+        // Prevent infinite loops with guard conditions
+        if (this.isChartUpdating || this.chartUpdateQueue.length === 0) return;
         
         const now = Date.now();
         const timeSinceLastUpdate = now - this.lastChartUpdate;
@@ -351,38 +440,56 @@ class GoldBreakoutScanner {
         if (timeSinceLastUpdate >= this.chartUpdateThrottle) {
             this.processChartUpdates();
         } else {
-            setTimeout(() => {
-                if (!this.isChartUpdating) {
+            // Use setTimeout with proper cleanup to prevent infinite loops
+            const timeoutId = setTimeout(() => {
+                // Double-check conditions before processing
+                if (!this.isChartUpdating && this.chartUpdateQueue.length > 0) {
                     this.processChartUpdates();
                 }
             }, this.chartUpdateThrottle - timeSinceLastUpdate);
+            
+            // Store timeout ID for potential cleanup
+            this.chartUpdateTimeoutId = timeoutId;
         }
     }
     
     processChartUpdates() {
-        if (this.chartUpdateQueue.length === 0) return;
+        if (this.chartUpdateQueue.length === 0 || this.isChartUpdating) return;
+        
+        // Clear any pending timeout
+        if (this.chartUpdateTimeoutId) {
+            clearTimeout(this.chartUpdateTimeoutId);
+            this.chartUpdateTimeoutId = null;
+        }
         
         this.isChartUpdating = true;
         
         // Process all queued chart updates in a single frame
         requestAnimationFrame(() => {
             try {
-                for (const updateFunction of this.chartUpdateQueue) {
-                    updateFunction();
+                const updates = [...this.chartUpdateQueue]; // Create a copy
+                this.chartUpdateQueue.length = 0; // Clear the queue immediately
+                
+                for (const updateFunction of updates) {
+                    if (typeof updateFunction === 'function') {
+                        updateFunction();
+                    }
                 }
             } catch (error) {
                 console.warn('Chart update failed:', error);
+            } finally {
+                this.lastChartUpdate = Date.now();
+                this.isChartUpdating = false;
             }
-            
-            this.chartUpdateQueue.length = 0;
-            this.lastChartUpdate = Date.now();
-            this.isChartUpdating = false;
         });
     }
 
     startRealTimeUpdates() {
+        // Stop any existing intervals first
+        this.stopRealTimeUpdates();
+        
         // High-frequency price updates for real-time feel
-        setInterval(() => {
+        this.priceUpdateInterval = setInterval(() => {
             if (this.isConnected && this.priceData.length > 0) {
                 // Update current price more frequently for real-time display
                 const lastCandle = this.priceData[this.priceData.length - 1];
@@ -396,7 +503,7 @@ class GoldBreakoutScanner {
         }, 500); // Update price every 0.5 seconds for real-time feel
         
         // Candle updates based on timeframe with optimized rendering
-        setInterval(() => {
+        this.candleUpdateInterval = setInterval(() => {
             if (this.isConnected && this.priceData.length > 0) {
                 const newCandle = this.generateNewCandle();
                 this.priceData.push(newCandle);
@@ -414,6 +521,17 @@ class GoldBreakoutScanner {
                 }
             }
         }, Math.max(this.currentTimeframe * 1000, 2000)); // Minimum 2 seconds for candle updates
+    }
+
+    stopRealTimeUpdates() {
+        if (this.priceUpdateInterval) {
+            clearInterval(this.priceUpdateInterval);
+            this.priceUpdateInterval = null;
+        }
+        if (this.candleUpdateInterval) {
+            clearInterval(this.candleUpdateInterval);
+            this.candleUpdateInterval = null;
+        }
     }
 
     generateNewCandle() {
@@ -734,12 +852,18 @@ class GoldBreakoutScanner {
 
     // Efficient DOM update system with batching
     queueDOMUpdate(elementId, updateFunction) {
+        if (!elementId || !updateFunction || typeof updateFunction !== 'function') {
+            console.warn('Invalid parameters provided to queueDOMUpdate');
+            return;
+        }
+        
         this.updateQueue.set(elementId, updateFunction);
         this.scheduleBatchUpdate();
     }
     
     scheduleBatchUpdate() {
-        if (this.isUpdating) return;
+        // Prevent infinite loops with guard conditions
+        if (this.isUpdating || this.updateQueue.size === 0) return;
         
         const now = Date.now();
         const timeSinceLastUpdate = now - this.lastUpdateTime;
@@ -747,33 +871,53 @@ class GoldBreakoutScanner {
         if (timeSinceLastUpdate >= this.updateThrottle) {
             this.processBatchUpdate();
         } else {
-            setTimeout(() => {
-                if (!this.isUpdating) {
+            // Use setTimeout with proper cleanup to prevent infinite loops
+            const timeoutId = setTimeout(() => {
+                // Double-check conditions before processing
+                if (!this.isUpdating && this.updateQueue.size > 0) {
                     this.processBatchUpdate();
                 }
             }, this.updateThrottle - timeSinceLastUpdate);
+            
+            // Store timeout ID for potential cleanup
+            this.domUpdateTimeoutId = timeoutId;
         }
     }
     
     processBatchUpdate() {
-        if (this.updateQueue.size === 0) return;
+        if (this.updateQueue.size === 0 || this.isUpdating) return;
+        
+        // Clear any pending timeout
+        if (this.domUpdateTimeoutId) {
+            clearTimeout(this.domUpdateTimeoutId);
+            this.domUpdateTimeoutId = null;
+        }
         
         this.isUpdating = true;
         
         // Use requestAnimationFrame for smooth updates
         requestAnimationFrame(() => {
-            // Process all queued updates in a single frame
-            for (const [elementId, updateFunction] of this.updateQueue) {
-                try {
-                    updateFunction();
-                } catch (error) {
-                    console.warn(`DOM update failed for ${elementId}:`, error);
+            try {
+                // Create a copy of the update queue and clear it immediately
+                const updates = new Map(this.updateQueue);
+                this.updateQueue.clear();
+                
+                // Process all queued updates in a single frame
+                for (const [elementId, updateFunction] of updates) {
+                    try {
+                        if (typeof updateFunction === 'function') {
+                            updateFunction();
+                        }
+                    } catch (error) {
+                        console.warn(`DOM update failed for ${elementId}:`, error);
+                    }
                 }
+            } catch (error) {
+                console.warn('Batch update failed:', error);
+            } finally {
+                this.lastUpdateTime = Date.now();
+                this.isUpdating = false;
             }
-            
-            this.updateQueue.clear();
-            this.lastUpdateTime = Date.now();
-            this.isUpdating = false;
         });
     }
 

@@ -25,7 +25,7 @@ class Navigation {
                     <!-- Desktop Navigation Menu -->
                     <div class="nav-menu" id="nav-menu">
                         <div class="nav-items">
-                            <a href="#home" class="nav-item active" data-route="home">
+                            <a href="#dashboard" class="nav-item" data-route="dashboard">
                                 <i class="fas fa-home"></i>
                                 <span>Dashboard</span>
                                 <div class="nav-indicator"></div>
@@ -96,7 +96,7 @@ class Navigation {
                         </div>
 
                         <div class="mobile-nav-items">
-                            <a href="#home" class="mobile-nav-item active" data-route="home">
+                            <a href="#dashboard" class="mobile-nav-item" data-route="dashboard">
                                 <i class="fas fa-home"></i>
                                 <span>Dashboard</span>
                                 <i class="fas fa-chevron-right"></i>

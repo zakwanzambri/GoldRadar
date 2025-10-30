@@ -242,21 +242,87 @@
     <script>
         // Initialize the application with routing system
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialize router and navigation
-            const router = new GoldRadarRouter();
-            const navigation = new Navigation(router);
-            document.getElementById('navigation-container').innerHTML = navigation.render();
-            navigation.init();
-            
-            // Register all pages with optimization options
-            router.register('/home', HomePage, 'Home', { preload: true, cache: true });
-            router.register('/scanner', ScannerPage, 'Scanner', { preload: true, cache: true });
-            router.register('/alerts', AlertsPage, 'Alerts', { cache: true });
-            router.register('/backtest', BacktestPage, 'Backtest', { cache: true });
-            router.register('/about', AboutPage, 'About', { cache: false }); // About page doesn't need caching
-            
-            // Start the router (handles initial route automatically)
-            router.init();
+            try {
+                // Check if all required classes are available
+                if (typeof GoldBreakoutScanner === 'undefined') {
+                    console.error('GoldBreakoutScanner not loaded');
+                    return;
+                }
+                if (typeof GoldRadarRouter === 'undefined') {
+                    console.error('GoldRadarRouter not loaded');
+                    return;
+                }
+                if (typeof Navigation === 'undefined') {
+                    console.error('Navigation not loaded');
+                    return;
+                }
+                if (typeof HomePage === 'undefined') {
+                    console.error('HomePage not loaded');
+                    return;
+                }
+
+                // Create GoldBreakoutScanner instance
+                const goldScanner = new GoldBreakoutScanner();
+                
+                // Initialize router and navigation
+                const router = new GoldRadarRouter();
+                const navigation = new Navigation(router);
+                
+                // Register all pages with optimization options BEFORE initializing router
+                // Pass goldScanner to HomePage
+                router.register('/home', function() { 
+                    const homePage = new HomePage(goldScanner);
+                    return homePage;
+                }, 'Home', { preload: true, cache: true });
+                
+                // Register dashboard route (alias for home)
+                router.register('/dashboard', function() { 
+                    const homePage = new HomePage(goldScanner);
+                    return homePage;
+                }, 'Dashboard', { preload: true, cache: true });
+                
+                // Register other pages
+                if (typeof ScannerPage !== 'undefined') {
+                    router.register('/scanner', ScannerPage, 'Scanner', { preload: true, cache: true });
+                }
+                if (typeof AlertsPage !== 'undefined') {
+                    router.register('/alerts', AlertsPage, 'Alerts', { cache: true });
+                }
+                if (typeof BacktestPage !== 'undefined') {
+                    router.register('/backtest', BacktestPage, 'Backtest', { cache: true });
+                }
+                if (typeof AboutPage !== 'undefined') {
+                    router.register('/about', AboutPage, 'About', { cache: false });
+                }
+                
+                // Initialize navigation after router has routes registered
+                document.getElementById('navigation-container').innerHTML = navigation.render();
+                navigation.init();
+                
+                // Start the router (handles initial route automatically)
+                router.init();
+                
+                // Initialize the gold scanner
+                goldScanner.init();
+                
+                console.log('Application initialized successfully');
+                
+            } catch (error) {
+                console.error('Failed to initialize application:', error);
+                // Show fallback content
+                const container = document.getElementById('page-container');
+                if (container) {
+                    container.innerHTML = `
+                        <div style="padding: 40px; text-align: center; color: #666;">
+                            <h2>Application Failed to Load</h2>
+                            <p>Please refresh the page to try again.</p>
+                            <button onclick="window.location.reload()" style="padding: 10px 20px; margin-top: 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                Refresh Page
+                            </button>
+                        </div>
+                    `;
+                }
+            }
         });
     </script>
 </body>
