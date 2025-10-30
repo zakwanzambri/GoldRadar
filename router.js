@@ -22,19 +22,30 @@ class GoldRadarRouter {
     }
 
     init() {
-        this.pageContainer = document.getElementById('page-content');
+        this.pageContainer = document.getElementById('page-container');
         this.createLoadingIndicator();
+        
+        // Listen for hash change events for client-side routing
+        window.addEventListener('hashchange', (e) => {
+            const hash = window.location.hash.slice(1) || '/home';
+            const route = hash.startsWith('/') ? hash : '/' + hash;
+            this.handleRoute(route);
+        });
         
         // Listen for navigation events
         window.addEventListener('popstate', (e) => {
-            this.handleRoute(window.location.pathname);
+            const hash = window.location.hash.slice(1) || '/home';
+            const route = hash.startsWith('/') ? hash : '/' + hash;
+            this.handleRoute(route);
         });
-        
-        // Handle initial route
-        this.handleRoute(window.location.pathname);
         
         // Preload critical pages
         this.preloadCriticalPages();
+        
+        // Handle initial route
+        const initialHash = window.location.hash.slice(1) || '/home';
+        const initialRoute = initialHash.startsWith('/') ? initialHash : '/' + initialHash;
+        this.handleRoute(initialRoute);
     }
 
     createLoadingIndicator() {
@@ -101,12 +112,14 @@ class GoldRadarRouter {
     }
 
     navigate(path) {
-        // Update browser history
-        if (window.location.pathname !== path) {
-            window.history.pushState({}, '', path);
+        // Update browser hash for client-side routing
+        const hash = '#' + path;
+        if (window.location.hash !== hash) {
+            window.location.hash = hash;
+        } else {
+            // If hash is the same, manually trigger route handling
+            this.handleRoute(path);
         }
-        
-        this.handleRoute(path);
     }
 
     async handleRoute(path) {
@@ -122,8 +135,12 @@ class GoldRadarRouter {
         
         if (!route) {
             console.warn(`Route not found: ${path}`);
-            // Fallback to home
-            this.navigate('/home');
+            // Prevent infinite loop - only fallback if not already trying to go to home
+            if (path !== '/home') {
+                this.handleRoute('/home');
+            } else {
+                console.error('Home route not found! Cannot fallback.');
+            }
             return;
         }
 
@@ -170,7 +187,13 @@ class GoldRadarRouter {
                 
                 this.pageContainer.innerHTML = '';
                 const content = this.currentPage.render();
-                this.pageContainer.appendChild(content);
+                
+                // Handle both string and DOM element content
+                if (typeof content === 'string') {
+                    this.pageContainer.innerHTML = content;
+                } else if (content instanceof HTMLElement) {
+                    this.pageContainer.appendChild(content);
+                }
                 
                 // Initialize page
                 if (typeof this.currentPage.init === 'function') {
@@ -183,6 +206,11 @@ class GoldRadarRouter {
 
             // Update navigation active state
             this.updateNavigationState(path);
+            
+            // Dispatch route change event for navigation components
+            window.dispatchEvent(new CustomEvent('routeChanged', {
+                detail: { route: path, page: this.currentPage }
+            }));
             
             // Record performance metrics
             const loadTime = performance.now() - startTime;

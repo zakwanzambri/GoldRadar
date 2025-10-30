@@ -255,12 +255,8 @@
             router.register('/backtest', BacktestPage, 'Backtest', { cache: true });
             router.register('/about', AboutPage, 'About', { cache: false }); // About page doesn't need caching
             
-            // Start the router
+            // Start the router (handles initial route automatically)
             router.init();
-            
-            // Set initial route
-            const initialRoute = window.location.hash.slice(1) || 'home';
-            router.navigate(initialRoute);
         });
     </script>
 </body>

@@ -327,7 +327,9 @@ class Navigation {
 
     navigateToRoute(route) {
         if (this.router) {
-            this.router.navigate(route);
+            // Ensure route starts with slash
+            const formattedRoute = route.startsWith('/') ? route : '/' + route;
+            this.router.navigate(formattedRoute);
         }
     }
 

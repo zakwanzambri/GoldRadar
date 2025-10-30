@@ -69,9 +69,14 @@ class GoldBreakoutScanner {
         }
         
         try {
+            // Ensure minimum dimensions to prevent negative height
+            const containerWidth = Math.max(chartContainer.clientWidth || 800, 400);
+            const containerHeight = Math.max(chartContainer.clientHeight || 400, 300);
+            const chartHeight = Math.max(containerHeight - 50, 250);
+            
             this.chart = window.LightweightCharts.createChart(chartContainer, {
-            width: chartContainer.clientWidth,
-            height: chartContainer.clientHeight - 50,
+            width: containerWidth,
+            height: chartHeight,
             layout: {
                 background: { color: 'transparent' },
                 textColor: '#ffffff',
@@ -138,9 +143,13 @@ class GoldBreakoutScanner {
             // Handle resize
             window.addEventListener('resize', () => {
                 if (this.chart) {
+                    const containerWidth = Math.max(chartContainer.clientWidth || 800, 400);
+                    const containerHeight = Math.max(chartContainer.clientHeight || 400, 300);
+                    const chartHeight = Math.max(containerHeight - 50, 250);
+                    
                     this.chart.applyOptions({
-                        width: chartContainer.clientWidth,
-                        height: chartContainer.clientHeight - 50,
+                        width: containerWidth,
+                        height: chartHeight,
                     });
                 }
             });
@@ -280,7 +289,13 @@ class GoldBreakoutScanner {
         // Simulate loading historical data
         const data = this.generateSimulatedData(100);
         this.priceData = data;
-        this.candlestickSeries.setData(data);
+        
+        // Only set data if candlestickSeries is properly initialized
+        if (this.candlestickSeries && typeof this.candlestickSeries.setData === 'function') {
+            this.candlestickSeries.setData(data);
+        } else {
+            console.warn('Candlestick series not initialized, skipping data load');
+        }
         
         // Calculate support and resistance
         this.calculateSupportResistance();
@@ -434,15 +449,20 @@ class GoldBreakoutScanner {
         const currentTime = this.priceData[this.priceData.length - 1].time;
         const startTime = this.priceData[Math.max(0, this.priceData.length - 50)].time;
         
-        this.supportLine.setData([
-            { time: startTime, value: this.supportLevel },
-            { time: currentTime, value: this.supportLevel }
-        ]);
+        // Only update lines if they are properly initialized
+        if (this.supportLine && typeof this.supportLine.setData === 'function') {
+            this.supportLine.setData([
+                { time: startTime, value: this.supportLevel },
+                { time: currentTime, value: this.supportLevel }
+            ]);
+        }
         
-        this.resistanceLine.setData([
-            { time: startTime, value: this.resistanceLevel },
-            { time: currentTime, value: this.resistanceLevel }
-        ]);
+        if (this.resistanceLine && typeof this.resistanceLine.setData === 'function') {
+            this.resistanceLine.setData([
+                { time: startTime, value: this.resistanceLevel },
+                { time: currentTime, value: this.resistanceLevel }
+            ]);
+        }
     }
 
     analyzeMarket() {

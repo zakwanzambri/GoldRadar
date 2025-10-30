@@ -174,10 +174,19 @@ class HomePage {
     }
 
     init() {
-        // Initialize existing functionality from the original script
-        this.initializeExistingFunctionality();
-        this.setupTimeframeControls();
-        this.setupChartControls();
+        try {
+            console.log('HomePage: Starting initialization');
+            
+            // Initialize existing functionality from the original script
+            this.initializeExistingFunctionality();
+            this.setupTimeframeControls();
+            this.setupChartControls();
+            
+            console.log('HomePage: Initialization completed successfully');
+        } catch (error) {
+            console.error('HomePage: Initialization failed:', error);
+            // Don't throw the error to prevent page crashes
+        }
     }
 
     initializeExistingFunctionality() {
@@ -240,10 +249,20 @@ class HomePage {
     }
 
     initializeChart() {
-        const chartContainer = document.getElementById('chart');
-        if (!chartContainer) return;
+        try {
+            const chartContainer = document.getElementById('chart');
+            if (!chartContainer) {
+                console.warn('HomePage: Chart container not found');
+                return;
+            }
 
-        this.chart = LightweightCharts.createChart(chartContainer, {
+            // Check if LightweightCharts is available
+            if (typeof LightweightCharts === 'undefined') {
+                console.error('HomePage: LightweightCharts library not loaded');
+                return;
+            }
+
+            this.chart = LightweightCharts.createChart(chartContainer, {
             width: chartContainer.clientWidth,
             height: 400,
             layout: {
@@ -283,14 +302,17 @@ class HomePage {
         window.chart = this.chart;
         window.candlestickSeries = this.candlestickSeries;
 
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            if (this.chart && chartContainer) {
-                this.chart.applyOptions({
-                    width: chartContainer.clientWidth,
-                });
-            }
-        });
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                if (this.chart && chartContainer) {
+                    this.chart.applyOptions({
+                        width: chartContainer.clientWidth,
+                    });
+                }
+            });
+        } catch (error) {
+            console.error('HomePage: Chart initialization failed:', error);
+        }
     }
 
     updateTimeframe(timeframe) {
