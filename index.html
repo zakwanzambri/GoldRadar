@@ -240,6 +240,18 @@
     
     <!-- Application Initialization -->
     <script>
+        // Handle direct route access and redirect to hash-based routing
+        (function() {
+            const currentPath = window.location.pathname;
+            const validRoutes = ['/home', '/scanner', '/alerts', '/backtest', '/about'];
+            
+            // If accessing a direct route (not root), redirect to hash-based URL
+            if (currentPath !== '/' && validRoutes.includes(currentPath)) {
+                window.location.replace(window.location.origin + '/#' + currentPath);
+                return;
+            }
+        })();
+
         // Initialize the application with routing system
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize router and navigation
