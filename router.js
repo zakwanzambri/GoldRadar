@@ -42,9 +42,27 @@ class GoldRadarRouter {
         // Preload critical pages
         this.preloadCriticalPages();
         
-        // Handle initial route
-        const initialHash = window.location.hash.slice(1) || '/home';
-        const initialRoute = initialHash.startsWith('/') ? initialHash : '/' + initialHash;
+        // Handle initial route - check both pathname and hash
+        let initialRoute;
+        const currentPath = window.location.pathname;
+        const currentHash = window.location.hash.slice(1);
+        
+        // If we have a hash, use it (traditional SPA routing)
+        if (currentHash) {
+            initialRoute = currentHash.startsWith('/') ? currentHash : '/' + currentHash;
+        }
+        // If we have a direct path (from our SPA server), use it
+        else if (currentPath && currentPath !== '/') {
+            initialRoute = currentPath;
+            // Update the hash to maintain consistency
+            window.location.hash = '#' + currentPath;
+        }
+        // Default to home
+        else {
+            initialRoute = '/home';
+            window.location.hash = '#/home';
+        }
+        
         this.handleRoute(initialRoute);
     }
 
