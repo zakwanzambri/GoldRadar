@@ -334,10 +334,13 @@ class Navigation {
     }
 
     updateActiveRoute() {
+        // Normalize current route (remove leading slash for comparison)
+        const normalizedRoute = this.currentRoute.startsWith('/') ? this.currentRoute.slice(1) : this.currentRoute;
+        
         // Update desktop navigation
         document.querySelectorAll('.nav-item').forEach(item => {
             item.classList.remove('active');
-            if (item.dataset.route === this.currentRoute) {
+            if (item.dataset.route === normalizedRoute) {
                 item.classList.add('active');
             }
         });
@@ -345,7 +348,7 @@ class Navigation {
         // Update mobile navigation
         document.querySelectorAll('.mobile-nav-item').forEach(item => {
             item.classList.remove('active');
-            if (item.dataset.route === this.currentRoute) {
+            if (item.dataset.route === normalizedRoute) {
                 item.classList.add('active');
             }
         });
@@ -356,11 +359,19 @@ class Navigation {
         if (!breadcrumb) return;
 
         const routeNames = {
-            home: { icon: 'fas fa-home', name: 'Dashboard' },
-            scanner: { icon: 'fas fa-search', name: 'Scanner' },
-            alerts: { icon: 'fas fa-bell', name: 'Alerts' },
-            backtest: { icon: 'fas fa-chart-bar', name: 'Backtest' },
-            about: { icon: 'fas fa-info-circle', name: 'About' }
+            '/home': { icon: 'fas fa-home', name: 'Dashboard' },
+            '/dashboard': { icon: 'fas fa-home', name: 'Dashboard' },
+            '/scanner': { icon: 'fas fa-search', name: 'Scanner' },
+            '/alerts': { icon: 'fas fa-bell', name: 'Alerts' },
+            '/backtest': { icon: 'fas fa-chart-bar', name: 'Backtest' },
+            '/about': { icon: 'fas fa-info-circle', name: 'About' },
+            // Support routes without slash for backward compatibility
+            'home': { icon: 'fas fa-home', name: 'Dashboard' },
+            'dashboard': { icon: 'fas fa-home', name: 'Dashboard' },
+            'scanner': { icon: 'fas fa-search', name: 'Scanner' },
+            'alerts': { icon: 'fas fa-bell', name: 'Alerts' },
+            'backtest': { icon: 'fas fa-chart-bar', name: 'Backtest' },
+            'about': { icon: 'fas fa-info-circle', name: 'About' }
         };
 
         const route = routeNames[this.currentRoute];
