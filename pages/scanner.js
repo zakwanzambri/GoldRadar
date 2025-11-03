@@ -56,13 +56,13 @@ class ScannerPage {
                 <div class="card scan-status">
                     <h3><i class="fas fa-activity"></i> Scan Status</h3>
                     <div class="status-display">
-                        <div class="status-indicator">
-                            <span id="scan-status-text">Ready to scan</span>
-                            <div id="scan-progress" class="progress-bar">
-                                <div class="progress-fill"></div>
-                            </div>
-                        </div>
                         <div class="scan-stats">
+                            <div class="scan-stats-header">
+                                <span id="scan-status-text">Ready to scan</span>
+                                <div id="scan-progress" class="progress-bar">
+                                    <div class="progress-fill"></div>
+                                </div>
+                            </div>
                             <div class="stat">
                                 <span class="stat-label">Scans Completed:</span>
                                 <span id="scans-completed">0</span>

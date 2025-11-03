@@ -1150,10 +1150,37 @@ input:checked + .slider:before {
     margin-bottom: 15px;
 }
 
-.scan-status .status-text {
+/* Ensure status text sits inside the box and doesn’t break oddly */
+.scan-status .scan-stats {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.scan-status .scan-stats-header {
+    flex-basis: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 5px;
+}
+
+.scan-status .status-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.scan-status #scan-status-text {
+    display: inline-block;
+    text-align: center;
+    white-space: nowrap;
     font-size: 1.1rem;
     color: #ffd700;
-    margin-bottom: 10px;
+    font-weight: 600;
 }
 
 .scan-status .status-stats {
