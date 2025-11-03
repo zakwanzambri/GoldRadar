@@ -215,11 +215,102 @@ class AlertsPage {
         `;
     }
 
-    init() {
-        this.setupAlertSettings();
-        this.setupCreateAlert();
-        this.setupAlertActions();
-        this.loadAlerts();
+    async init() {
+        // Show skeleton screens while loading
+        this.showSkeletonScreens();
+        
+        try {
+            // Simulate loading delay for alerts initialization
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            this.setupAlertSettings();
+            this.setupCreateAlert();
+            this.setupAlertActions();
+            
+            // Load alerts with loading state
+            await this.loadAlertsWithLoading();
+            
+            // Initialize alert monitoring
+            await this.initializeAlertMonitoring();
+            
+            // Hide skeleton screens and show real content
+            this.hideSkeletonScreens();
+            
+        } catch (error) {
+            console.error('Error initializing alerts:', error);
+            this.hideSkeletonScreens();
+        }
+    }
+
+    showSkeletonScreens() {
+        const loadingManager = window.LoadingManager;
+        if (!loadingManager) return;
+
+        // Show skeleton for alert settings
+        this.settingsSkeleton = loadingManager.showSkeleton('.alert-settings .settings-grid', 'card', {
+            title: 'Alert Settings',
+            lines: 4
+        });
+
+        // Show skeleton for active alerts
+        this.activeAlertsSkeleton = loadingManager.showSkeleton('#active-alerts-container', 'list', {
+            items: 3
+        });
+
+        // Show skeleton for alert history
+        this.historySkeleton = loadingManager.showSkeleton('#alert-history-container', 'table', {
+            rows: 4,
+            columns: 3
+        });
+
+        // Show skeleton for alert statistics
+        this.statsSkeleton = loadingManager.showSkeleton('.alert-stats .stats-grid', 'card', {
+            title: 'Statistics',
+            lines: 2
+        });
+    }
+
+    hideSkeletonScreens() {
+        const loadingManager = window.LoadingManager;
+        if (!loadingManager) return;
+
+        // Hide all skeleton screens
+        if (this.settingsSkeleton) loadingManager.hideSkeleton(this.settingsSkeleton);
+        if (this.activeAlertsSkeleton) loadingManager.hideSkeleton(this.activeAlertsSkeleton);
+        if (this.historySkeleton) loadingManager.hideSkeleton(this.historySkeleton);
+        if (this.statsSkeleton) loadingManager.hideSkeleton(this.statsSkeleton);
+    }
+
+    async loadAlertsWithLoading() {
+        const loadingManager = window.LoadingManager;
+        
+        try {
+            // Show loading for alerts data
+            if (loadingManager) {
+                loadingManager.showInlineLoading('#active-alerts-container', 'Loading alerts...');
+            }
+
+            // Simulate loading alerts from storage/server
+            await new Promise(resolve => setTimeout(resolve, 600));
+            
+            this.loadAlerts();
+            
+            // Hide loading
+            if (loadingManager) {
+                loadingManager.hideInlineLoading('#active-alerts-container');
+            }
+
+        } catch (error) {
+            console.error('Error loading alerts:', error);
+            if (loadingManager) {
+                loadingManager.hideInlineLoading('#active-alerts-container');
+            }
+        }
+    }
+
+    async initializeAlertMonitoring() {
+        // Simulate alert monitoring initialization
+        await new Promise(resolve => setTimeout(resolve, 400));
         this.startAlertMonitoring();
     }
 
@@ -286,36 +377,116 @@ class AlertsPage {
         }
     }
 
-    createAlert() {
+    async createAlert() {
         const type = document.getElementById('alert-type')?.value;
         const condition = document.getElementById('alert-condition')?.value;
         const value = document.getElementById('alert-value')?.value;
         const message = document.getElementById('alert-message')?.value;
+        const loadingManager = window.LoadingManager;
+        const createBtn = document.getElementById('create-alert-btn');
 
         if (!type || !condition || !value) {
             this.showNotification('Please fill in all required fields', 'error');
             return;
         }
 
-        const alert = {
-            id: Date.now(),
-            type,
-            condition,
-            value: parseFloat(value),
-            message: message || `${type} alert ${condition} ${value}`,
-            created: new Date(),
-            active: true,
-            triggered: false
-        };
+        try {
+            // Disable button and show loading
+            if (createBtn) createBtn.disabled = true;
+            if (loadingManager) {
+                loadingManager.showInlineLoading('.create-alert', 'Creating alert...');
+            }
 
-        this.alerts.push(alert);
-        this.renderActiveAlerts();
-        this.updateAlertStats();
-        this.showNotification('Alert created successfully', 'success');
+            // Simulate alert creation processing
+            await new Promise(resolve => setTimeout(resolve, 800));
 
-        // Clear form
-        document.getElementById('alert-value').value = '';
-        document.getElementById('alert-message').value = '';
+            const alert = {
+                id: Date.now(),
+                type,
+                condition,
+                value: parseFloat(value),
+                message: message || `${type} alert ${condition} ${value}`,
+                created: new Date(),
+                active: true,
+                triggered: false
+            };
+
+            this.alerts.push(alert);
+            
+            // Update UI with loading feedback
+            await this.renderActiveAlertsWithLoading();
+            await this.updateAlertStatsWithLoading();
+            
+            this.showNotification('Alert created successfully', 'success');
+
+            // Clear form
+            document.getElementById('alert-value').value = '';
+            document.getElementById('alert-message').value = '';
+
+        } catch (error) {
+            console.error('Error creating alert:', error);
+            this.showNotification('Error creating alert', 'error');
+        } finally {
+            // Re-enable button and hide loading
+            if (createBtn) createBtn.disabled = false;
+            if (loadingManager) {
+                loadingManager.hideInlineLoading('.create-alert');
+            }
+        }
+    }
+
+    async renderActiveAlertsWithLoading() {
+        const loadingManager = window.LoadingManager;
+        
+        try {
+            // Show brief loading for alerts update
+            if (loadingManager) {
+                loadingManager.showInlineLoading('#active-alerts-container', 'Updating alerts...');
+            }
+
+            // Simulate processing time
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            this.renderActiveAlerts();
+            
+            // Hide loading
+            if (loadingManager) {
+                loadingManager.hideInlineLoading('#active-alerts-container');
+            }
+
+        } catch (error) {
+            console.error('Error rendering alerts:', error);
+            if (loadingManager) {
+                loadingManager.hideInlineLoading('#active-alerts-container');
+            }
+        }
+    }
+
+    async updateAlertStatsWithLoading() {
+        const loadingManager = window.LoadingManager;
+        
+        try {
+            // Show brief loading for stats update
+            if (loadingManager) {
+                loadingManager.showInlineLoading('.alert-stats', 'Updating statistics...');
+            }
+
+            // Simulate processing time
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            this.updateAlertStats();
+            
+            // Hide loading
+            if (loadingManager) {
+                loadingManager.hideInlineLoading('.alert-stats');
+            }
+
+        } catch (error) {
+            console.error('Error updating stats:', error);
+            if (loadingManager) {
+                loadingManager.hideInlineLoading('.alert-stats');
+            }
+        }
     }
 
     renderActiveAlerts() {
@@ -541,6 +712,106 @@ class AlertsPage {
             this.renderActiveAlerts();
             this.updateAlertStats();
         }
+        
+        // Load alert history
+        this.loadAlertHistory();
+    }
+
+    async loadAlertHistory() {
+        const loadingManager = window.LoadingManager;
+        const historyContainer = document.getElementById('alert-history-container');
+        
+        if (!historyContainer) return;
+
+        try {
+            // Show loading for history
+            if (loadingManager) {
+                loadingManager.showInlineLoading('#alert-history-container', 'Loading alert history...');
+            }
+
+            // Simulate loading history from server/storage
+            await new Promise(resolve => setTimeout(resolve, 1200));
+
+            // Generate sample alert history
+            const sampleHistory = this.generateSampleHistory();
+            
+            this.renderAlertHistory(sampleHistory);
+            
+            // Hide loading
+            if (loadingManager) {
+                loadingManager.hideInlineLoading('#alert-history-container');
+            }
+
+        } catch (error) {
+            console.error('Error loading alert history:', error);
+            if (loadingManager) {
+                loadingManager.hideInlineLoading('#alert-history-container');
+            }
+        }
+    }
+
+    generateSampleHistory() {
+        const types = ['price', 'breakout', 'pattern', 'volume'];
+        const conditions = ['above', 'below'];
+        const history = [];
+
+        for (let i = 0; i < 8; i++) {
+            const date = new Date();
+            date.setHours(date.getHours() - Math.floor(Math.random() * 72)); // Last 3 days
+
+            history.push({
+                id: Date.now() + i,
+                type: types[Math.floor(Math.random() * types.length)],
+                condition: conditions[Math.floor(Math.random() * conditions.length)],
+                value: (1950 + Math.random() * 100).toFixed(2),
+                message: `Alert triggered for ${types[Math.floor(Math.random() * types.length)]}`,
+                triggeredAt: date,
+                success: Math.random() > 0.3 // 70% success rate
+            });
+        }
+
+        return history.sort((a, b) => b.triggeredAt - a.triggeredAt);
+    }
+
+    renderAlertHistory(history) {
+        const container = document.getElementById('alert-history-container');
+        if (!container) return;
+
+        if (history.length === 0) {
+            container.innerHTML = `
+                <div class="no-history">
+                    <i class="fas fa-clock"></i>
+                    <p>No alert history yet. Alerts will appear here once triggered.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const historyHTML = history.map(alert => `
+            <div class="history-item ${alert.success ? 'success' : 'failed'}">
+                <div class="history-header">
+                    <span class="history-type">
+                        <i class="fas fa-${this.getAlertIcon(alert.type)}"></i>
+                        ${alert.type.toUpperCase()}
+                    </span>
+                    <span class="history-time">
+                        ${alert.triggeredAt.toLocaleString()}
+                    </span>
+                </div>
+                <div class="history-details">
+                    <div class="history-condition">
+                        ${alert.condition} ${alert.value}
+                    </div>
+                    <div class="history-message">${alert.message}</div>
+                    <div class="history-status ${alert.success ? 'success' : 'failed'}">
+                        <i class="fas fa-${alert.success ? 'check' : 'times'}"></i>
+                        ${alert.success ? 'Successful' : 'Failed'}
+                    </div>
+                </div>
+            </div>
+        `).join('');
+
+        container.innerHTML = historyHTML;
     }
 
     destroy() {

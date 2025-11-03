@@ -62,18 +62,36 @@ class GoldBreakoutScanner {
         setInterval(() => this.detectPatterns(), 1000); // Pattern detection every 1 second
     }
 
-    initChart() {
+    async initChart() {
+        const loadingManager = window.LoadingManager;
+        
         try {
+            // Show chart loading state
+            if (loadingManager) {
+                loadingManager.showInlineLoading('.chart-container', 'Initializing trading chart...');
+            }
+
             // Check if LightweightCharts is available
             if (typeof LightweightCharts === 'undefined') {
                 console.error('LightweightCharts library not loaded');
+                if (loadingManager) {
+                    loadingManager.showError('.chart-container', 'Chart library not loaded');
+                }
                 return;
             }
 
             const chartContainer = document.getElementById('chart');
             if (!chartContainer) {
                 console.error('Chart container not found');
+                if (loadingManager) {
+                    loadingManager.showError('.chart-container', 'Chart container not found');
+                }
                 return;
+            }
+
+            // Update loading message
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.chart-container', 'Configuring chart settings...');
             }
 
             // Get container dimensions with fallback
@@ -82,6 +100,11 @@ class GoldBreakoutScanner {
             const height = Math.max(containerRect.height || 400, 300);
 
             console.log('Initializing chart with dimensions:', { width, height });
+
+            // Update loading message
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.chart-container', 'Creating chart instance...');
+            }
 
             // Create chart with proper error handling
             this.chart = LightweightCharts.createChart(chartContainer, {
@@ -121,6 +144,11 @@ class GoldBreakoutScanner {
                 },
             });
 
+            // Update loading message
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.chart-container', 'Adding chart series...');
+            }
+
             // Create candlestick series
             this.candlestickSeries = this.chart.addCandlestickSeries({
                 upColor: '#26a69a',
@@ -143,6 +171,11 @@ class GoldBreakoutScanner {
                 },
             });
 
+            // Update loading message
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.chart-container', 'Setting up chart interactions...');
+            }
+
             // Handle window resize
             const resizeObserver = new ResizeObserver(entries => {
                 if (this.chart && entries.length > 0) {
@@ -156,14 +189,31 @@ class GoldBreakoutScanner {
             
             resizeObserver.observe(chartContainer);
 
+            // Final loading step
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.chart-container', 'Chart ready!');
+            }
+
+            // Brief delay to show completion
+            await new Promise(resolve => setTimeout(resolve, 300));
+
             console.log('Chart initialized successfully');
             
         } catch (error) {
             console.error('Error initializing chart:', error);
-            // Show fallback message to user
-            const chartContainer = document.getElementById('chart');
-            if (chartContainer) {
-                chartContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Chart initialization failed. Please refresh the page.</div>';
+            if (loadingManager) {
+                loadingManager.showError('.chart-container', 'Chart initialization failed');
+            } else {
+                // Show fallback message to user
+                const chartContainer = document.getElementById('chart');
+                if (chartContainer) {
+                    chartContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #666;">Chart initialization failed. Please refresh the page.</div>';
+                }
+            }
+        } finally {
+            // Hide loading state
+            if (loadingManager) {
+                loadingManager.hideInlineLoading('.chart-container');
             }
         }
     }
@@ -209,14 +259,31 @@ class GoldBreakoutScanner {
     }
 
     async startDataFeed() {
+        const loadingManager = window.LoadingManager;
+        
         try {
             console.log('Starting data feed...');
+            
+            // Show loading state for data feed initialization
+            if (loadingManager) {
+                loadingManager.showInlineLoading('.connection-status', 'Initializing data feed...');
+            }
             
             // Update connection status
             this.updateConnectionStatus(false);
             
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.connection-status', 'Connecting to market data...');
+            }
+            
             // Simulate connection process
             await this.simulateConnection();
+            
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.connection-status', 'Waiting for chart initialization...');
+            }
             
             // Wait for chart to be fully initialized
             let retries = 0;
@@ -224,6 +291,11 @@ class GoldBreakoutScanner {
             
             while ((!this.chart || !this.candlestickSeries) && retries < maxRetries) {
                 console.log(`Waiting for chart to be ready... (${retries + 1}/${maxRetries})`);
+                
+                if (loadingManager) {
+                    loadingManager.updateInlineLoadingMessage('.connection-status', `Waiting for chart... (${retries + 1}/${maxRetries})`);
+                }
+                
                 await new Promise(resolve => setTimeout(resolve, 200));
                 retries++;
             }
@@ -231,11 +303,23 @@ class GoldBreakoutScanner {
             if (!this.chart || !this.candlestickSeries) {
                 console.error('Chart not ready after waiting, cannot start data feed');
                 this.updateConnectionStatus(false);
+                
+                if (loadingManager) {
+                    loadingManager.showError('.connection-status', 'Chart initialization failed');
+                }
                 return;
+            }
+            
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.connection-status', 'Loading historical data...');
             }
             
             // Load historical data first
             await this.loadHistoricalData();
+            
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.connection-status', 'Starting real-time updates...');
+            }
             
             // Start WebSocket simulation
             this.startWebSocketSimulation();
@@ -243,14 +327,30 @@ class GoldBreakoutScanner {
             // Start real-time updates
             this.startRealTimeUpdates();
             
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.connection-status', 'Data feed connected!');
+            }
+            
             // Update connection status to connected
             this.updateConnectionStatus(true);
+            
+            // Brief delay to show success message
+            await new Promise(resolve => setTimeout(resolve, 500));
             
             console.log('Data feed started successfully');
             
         } catch (error) {
             console.error('Failed to start data feed:', error);
             this.updateConnectionStatus(false);
+            
+            if (loadingManager) {
+                loadingManager.showError('.connection-status', 'Failed to start data feed');
+            }
+        } finally {
+            // Hide loading state
+            if (loadingManager) {
+                loadingManager.hideInlineLoading('.connection-status');
+            }
         }
     }
 
@@ -322,8 +422,15 @@ class GoldBreakoutScanner {
     }
 
     async loadHistoricalData() {
+        const loadingManager = window.LoadingManager;
+        
         try {
             console.log('Loading historical data...');
+            
+            // Show loading state for data loading
+            if (loadingManager) {
+                loadingManager.showInlineLoading('.chart-container', 'Loading historical data...');
+            }
             
             // Wait for chart to be initialized
             let retries = 0;
@@ -331,13 +438,23 @@ class GoldBreakoutScanner {
             
             while ((!this.chart || !this.candlestickSeries) && retries < maxRetries) {
                 console.log(`Waiting for chart initialization... (${retries + 1}/${maxRetries})`);
+                if (loadingManager) {
+                    loadingManager.updateInlineLoadingMessage('.chart-container', `Waiting for chart... (${retries + 1}/${maxRetries})`);
+                }
                 await new Promise(resolve => setTimeout(resolve, 100));
                 retries++;
             }
             
             if (!this.chart || !this.candlestickSeries) {
                 console.error('Chart not initialized after waiting');
+                if (loadingManager) {
+                    loadingManager.showError('.chart-container', 'Chart not initialized');
+                }
                 return;
+            }
+            
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.chart-container', 'Generating market data...');
             }
             
             // Generate simulated data
@@ -347,13 +464,24 @@ class GoldBreakoutScanner {
             console.log('Generated data points:', data.length);
             console.log('Sample data:', data.slice(0, 3));
             
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.chart-container', 'Loading candlestick data...');
+            }
+            
             // Set data to candlestick series
             if (this.candlestickSeries && typeof this.candlestickSeries.setData === 'function') {
                 this.candlestickSeries.setData(data);
                 console.log('Data loaded to candlestick series successfully');
             } else {
                 console.error('Candlestick series not properly initialized');
+                if (loadingManager) {
+                    loadingManager.showError('.chart-container', 'Candlestick series error');
+                }
                 return;
+            }
+            
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.chart-container', 'Loading volume data...');
             }
             
             // Generate and set volume data
@@ -368,8 +496,16 @@ class GoldBreakoutScanner {
                 console.log('Volume data loaded successfully');
             }
             
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.chart-container', 'Calculating support/resistance...');
+            }
+            
             // Calculate support and resistance
             this.calculateSupportResistance();
+            
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.chart-container', 'Updating price display...');
+            }
             
             // Update current price display
             if (data.length > 0) {
@@ -378,15 +514,34 @@ class GoldBreakoutScanner {
                 console.log('Current price updated:', lastCandle.close);
             }
             
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.chart-container', 'Finalizing chart...');
+            }
+            
             // Fit chart content
             if (this.chart && typeof this.chart.timeScale === 'function') {
                 this.chart.timeScale().fitContent();
             }
             
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.chart-container', 'Data loaded successfully!');
+            }
+            
+            // Brief delay to show completion
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
             console.log('Historical data loading completed successfully');
             
         } catch (error) {
             console.error('Error loading historical data:', error);
+            if (loadingManager) {
+                loadingManager.showError('.chart-container', 'Failed to load historical data');
+            }
+        } finally {
+            // Hide loading state
+            if (loadingManager) {
+                loadingManager.hideInlineLoading('.chart-container');
+            }
         }
     }
 

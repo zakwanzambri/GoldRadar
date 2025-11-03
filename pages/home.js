@@ -173,40 +173,107 @@ class HomePage {
         `;
     }
 
-    init() {
+    async init() {
+        // Show skeleton screens while loading
+        this.showSkeletonScreens();
+        
         try {
             console.log('HomePage: Starting initialization');
             
             // Initialize existing functionality from the original script
-            this.initializeExistingFunctionality();
+            await this.initializeExistingFunctionality();
             this.setupTimeframeControls();
             this.setupChartControls();
+            
+            // Initialize chart with loading state
+            await this.initializeChart();
+            
+            // Hide skeleton screens and show real content
+            this.hideSkeletonScreens();
             
             console.log('HomePage: Initialization completed successfully');
         } catch (error) {
             console.error('HomePage: Initialization failed:', error);
+            this.hideSkeletonScreens();
             // Don't throw the error to prevent page crashes
         }
     }
 
-    initializeExistingFunctionality() {
-        // Check if the original script functions are available
-        if (typeof window.initializeChart === 'function') {
-            window.initializeChart();
-        }
-        
-        if (typeof window.startRealTimeUpdates === 'function') {
-            window.startRealTimeUpdates();
-        }
-        
-        if (typeof window.setupEventListeners === 'function') {
-            window.setupEventListeners();
-        }
+    showSkeletonScreens() {
+        const loadingManager = window.LoadingManager;
+        if (!loadingManager) return;
 
-        // If original functions are not available, initialize basic functionality
-        if (!window.chart) {
-            this.initializeChart();
-            this.startRealTimeUpdates();
+        // Show skeleton for market status
+        this.marketStatusSkeleton = loadingManager.showSkeleton('.market-status', 'card', {
+            title: 'Market Status',
+            lines: 4
+        });
+
+        // Show skeleton for chart
+        this.chartSkeleton = loadingManager.showSkeleton('.chart-container', 'chart', {
+            height: '400px'
+        });
+
+        // Show skeleton for signals panel
+        this.signalsSkeleton = loadingManager.showSkeleton('.signals-panel', 'list', {
+            items: 3
+        });
+
+        // Show skeleton for pattern detection
+        this.patternSkeleton = loadingManager.showSkeleton('.pattern-detection', 'card', {
+            title: 'Pattern Detection',
+            lines: 3
+        });
+
+        // Show skeleton for performance stats
+        this.statsSkeleton = loadingManager.showSkeleton('.performance-stats', 'card', {
+            title: 'Performance Stats',
+            lines: 3
+        });
+    }
+
+    hideSkeletonScreens() {
+        const loadingManager = window.LoadingManager;
+        if (!loadingManager) return;
+
+        // Hide all skeleton screens
+        if (this.marketStatusSkeleton) loadingManager.hideSkeleton(this.marketStatusSkeleton);
+        if (this.chartSkeleton) loadingManager.hideSkeleton(this.chartSkeleton);
+        if (this.signalsSkeleton) loadingManager.hideSkeleton(this.signalsSkeleton);
+        if (this.patternSkeleton) loadingManager.hideSkeleton(this.patternSkeleton);
+        if (this.statsSkeleton) loadingManager.hideSkeleton(this.statsSkeleton);
+    }
+
+    async initializeExistingFunctionality() {
+        try {
+            // Simulate loading market data
+            await new Promise(resolve => setTimeout(resolve, 600));
+            
+            // Check if the original script functions are available
+            if (typeof window.initializeChart === 'function') {
+                window.initializeChart();
+            }
+            
+            if (typeof window.startRealTimeUpdates === 'function') {
+                window.startRealTimeUpdates();
+            }
+            
+            if (typeof window.setupEventListeners === 'function') {
+                window.setupEventListeners();
+            }
+
+            // If original functions are not available, initialize basic functionality
+            if (!window.chart) {
+                this.initializeChart();
+                this.startRealTimeUpdates();
+            }
+            
+            // Update market data after initialization
+            await this.updateMarketData();
+            this.updateBreakoutStatus();
+            
+        } catch (error) {
+            console.error('Error initializing existing functionality:', error);
         }
     }
 
@@ -248,7 +315,9 @@ class HomePage {
         }
     }
 
-    initializeChart() {
+    async initializeChart() {
+        const loadingManager = window.LoadingManager;
+        
         try {
             const chartContainer = document.getElementById('chart');
             if (!chartContainer) {
@@ -262,45 +331,66 @@ class HomePage {
                 return;
             }
 
+            // Show chart loading state
+            if (loadingManager) {
+                loadingManager.showInlineLoading('.chart-container', 'Initializing chart...');
+            }
+
+            // Simulate loading delay for chart initialization
+            await new Promise(resolve => setTimeout(resolve, 800));
+
+            // Update loading message
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.chart-container', 'Creating chart instance...');
+            }
+
             this.chart = LightweightCharts.createChart(chartContainer, {
-            width: chartContainer.clientWidth,
-            height: 400,
-            layout: {
-                backgroundColor: '#ffffff',
-                textColor: '#333',
-            },
-            grid: {
-                vertLines: {
-                    color: '#f0f0f0',
+                width: chartContainer.clientWidth,
+                height: 400,
+                layout: {
+                    backgroundColor: '#ffffff',
+                    textColor: '#333',
                 },
-                horzLines: {
-                    color: '#f0f0f0',
+                grid: {
+                    vertLines: {
+                        color: '#f0f0f0',
+                    },
+                    horzLines: {
+                        color: '#f0f0f0',
+                    },
                 },
-            },
-            crosshair: {
-                mode: LightweightCharts.CrosshairMode.Normal,
-            },
-            rightPriceScale: {
-                borderColor: '#cccccc',
-            },
-            timeScale: {
-                borderColor: '#cccccc',
-                timeVisible: true,
-                secondsVisible: false,
-            },
-        });
+                crosshair: {
+                    mode: LightweightCharts.CrosshairMode.Normal,
+                },
+                rightPriceScale: {
+                    borderColor: '#cccccc',
+                },
+                timeScale: {
+                    borderColor: '#cccccc',
+                    timeVisible: true,
+                    secondsVisible: false,
+                },
+            });
 
-        this.candlestickSeries = this.chart.addCandlestickSeries({
-            upColor: '#26a69a',
-            downColor: '#ef5350',
-            borderVisible: false,
-            wickUpColor: '#26a69a',
-            wickDownColor: '#ef5350',
-        });
+            // Update loading message
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.chart-container', 'Adding chart series...');
+            }
 
-        // Make chart available globally for compatibility
-        window.chart = this.chart;
-        window.candlestickSeries = this.candlestickSeries;
+            this.candlestickSeries = this.chart.addCandlestickSeries({
+                upColor: '#26a69a',
+                downColor: '#ef5350',
+                borderVisible: false,
+                wickUpColor: '#26a69a',
+                wickDownColor: '#ef5350',
+            });
+
+            // Load initial chart data
+            await this.loadChartData();
+
+            // Make chart available globally for compatibility
+            window.chart = this.chart;
+            window.candlestickSeries = this.candlestickSeries;
 
             // Handle window resize
             window.addEventListener('resize', () => {
@@ -310,9 +400,120 @@ class HomePage {
                     });
                 }
             });
+
+            // Start real-time updates
+            await this.startRealTimeUpdatesWithLoading();
+
         } catch (error) {
             console.error('HomePage: Chart initialization failed:', error);
+            if (loadingManager) {
+                loadingManager.showError('.chart-container', 'Failed to initialize chart');
+            }
+        } finally {
+            // Hide loading state
+            if (loadingManager) {
+                loadingManager.hideInlineLoading('.chart-container');
+            }
         }
+    }
+
+    async loadChartData() {
+        const loadingManager = window.LoadingManager;
+        
+        try {
+            // Update loading message for data loading
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.chart-container', 'Loading historical data...');
+            }
+
+            // Simulate loading chart data with progress updates
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.chart-container', 'Processing market data...');
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            // Generate sample data for demonstration
+            const data = this.generateSampleData();
+            
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.chart-container', 'Rendering chart data...');
+            }
+            
+            if (this.candlestickSeries && data.length > 0) {
+                this.candlestickSeries.setData(data);
+            }
+            
+            // Final loading step
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+        } catch (error) {
+            console.error('HomePage: Failed to load chart data:', error);
+            if (loadingManager) {
+                loadingManager.showError('.chart-container', 'Failed to load chart data');
+            }
+        }
+    }
+
+    async startRealTimeUpdatesWithLoading() {
+        const loadingManager = window.LoadingManager;
+        
+        try {
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.chart-container', 'Starting real-time updates...');
+            }
+
+            // Simulate connection setup delay
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+            // Start the actual real-time updates
+            this.startRealTimeUpdates();
+
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.chart-container', 'Chart ready!');
+            }
+
+            // Brief delay to show "ready" message
+            await new Promise(resolve => setTimeout(resolve, 200));
+
+        } catch (error) {
+            console.error('HomePage: Failed to start real-time updates:', error);
+            if (loadingManager) {
+                loadingManager.showError('.chart-container', 'Failed to start real-time updates');
+            }
+        }
+    }
+
+    generateSampleData() {
+        const data = [];
+        const basePrice = 2000;
+        let currentPrice = basePrice;
+        const now = new Date();
+        
+        for (let i = 100; i >= 0; i--) {
+            const time = Math.floor((now.getTime() - i * 60000) / 1000); // 1 minute intervals
+            const change = (Math.random() - 0.5) * 10;
+            currentPrice += change;
+            
+            const open = currentPrice;
+            const close = currentPrice + (Math.random() - 0.5) * 5;
+            const high = Math.max(open, close) + Math.random() * 3;
+            const low = Math.min(open, close) - Math.random() * 3;
+            
+            data.push({
+                time: time,
+                open: parseFloat(open.toFixed(2)),
+                high: parseFloat(high.toFixed(2)),
+                low: parseFloat(low.toFixed(2)),
+                close: parseFloat(close.toFixed(2))
+            });
+            
+            currentPrice = close;
+        }
+        
+        return data;
     }
 
     updateTimeframe(timeframe) {
@@ -336,44 +537,132 @@ class HomePage {
         }, 1000);
     }
 
-    updateMarketData() {
-        // Use existing update function if available
-        if (typeof window.updateMarketData === 'function') {
-            window.updateMarketData();
-            return;
-        }
-
-        // Fallback: basic market data simulation
-        const basePrice = 2000;
-        const variation = (Math.random() - 0.5) * 20;
-        const currentPrice = basePrice + variation;
-        const change = (Math.random() - 0.5) * 5;
-        const changePercent = (change / currentPrice * 100).toFixed(2);
-
-        // Update price display
-        const priceElement = document.getElementById('current-price');
-        const changeElement = document.getElementById('price-change');
+    async updateMarketData() {
+        const loadingManager = window.LoadingManager;
         
-        if (priceElement) {
-            priceElement.textContent = `$${currentPrice.toFixed(2)}`;
+        try {
+            // Show inline loading for market data sections
+            if (loadingManager) {
+                loadingManager.showInlineLoading('.market-status .card-content', 'Updating market data...');
+            }
+
+            // Use existing update function if available
+            if (typeof window.updateMarketData === 'function') {
+                window.updateMarketData();
+                return;
+            }
+
+            // Simulate API call delay
+            await new Promise(resolve => setTimeout(resolve, 400));
+
+            // Fallback: basic market data simulation
+            const basePrice = 2000;
+            const variation = (Math.random() - 0.5) * 20;
+            const currentPrice = basePrice + variation;
+            const change = (Math.random() - 0.5) * 5;
+            const changePercent = (change / currentPrice * 100).toFixed(2);
+
+            // Update price display
+            const priceElement = document.getElementById('current-price');
+            const changeElement = document.getElementById('price-change');
+            
+            if (priceElement) {
+                priceElement.textContent = `$${currentPrice.toFixed(2)}`;
+            }
+            
+            if (changeElement) {
+                changeElement.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)} (${changePercent}%)`;
+                changeElement.className = `change ${change >= 0 ? 'positive' : 'negative'}`;
+            }
+
+            // Update other market info
+            const spreadElement = document.getElementById('spread');
+            const volumeElement = document.getElementById('volume');
+            const atrElement = document.getElementById('atr');
+
+            if (spreadElement) spreadElement.textContent = (Math.random() * 2).toFixed(1);
+            if (volumeElement) volumeElement.textContent = Math.floor(Math.random() * 10000);
+            if (atrElement) atrElement.textContent = (Math.random() * 5).toFixed(1);
+
+            // Update signals and pattern detection
+            await this.updateSignalsData();
+            await this.updatePatternData();
+            await this.updatePerformanceStats();
+
+        } catch (error) {
+            console.error('Error updating market data:', error);
+        } finally {
+            // Hide inline loading
+            if (loadingManager) {
+                loadingManager.hideInlineLoading('.market-status .card-content');
+            }
         }
+    }
+
+    async updateSignalsData() {
+        // Simulate loading signals data
+        await new Promise(resolve => setTimeout(resolve, 200));
         
-        if (changeElement) {
-            changeElement.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)} (${changePercent}%)`;
-            changeElement.className = `change ${change >= 0 ? 'positive' : 'negative'}`;
+        // Update signals panel with sample data
+        const signalsContainer = document.querySelector('.signals-panel .card-content');
+        if (signalsContainer) {
+            const signals = [
+                { type: 'BUY', price: '2001.50', time: '2 min ago', confidence: 'High' },
+                { type: 'SELL', price: '1998.20', time: '5 min ago', confidence: 'Medium' },
+                { type: 'BUY', price: '1995.80', time: '8 min ago', confidence: 'High' }
+            ];
+            
+            signalsContainer.innerHTML = signals.map(signal => `
+                <div class="signal-item ${signal.type.toLowerCase()}">
+                    <span class="signal-type">${signal.type}</span>
+                    <span class="signal-price">$${signal.price}</span>
+                    <span class="signal-time">${signal.time}</span>
+                    <span class="signal-confidence">${signal.confidence}</span>
+                </div>
+            `).join('');
         }
+    }
 
-        // Update other market info
-        const spreadElement = document.getElementById('spread');
-        const volumeElement = document.getElementById('volume');
-        const atrElement = document.getElementById('atr');
+    async updatePatternData() {
+        // Simulate loading pattern data
+        await new Promise(resolve => setTimeout(resolve, 150));
+        
+        const patternContainer = document.querySelector('.pattern-detection .card-content');
+        if (patternContainer) {
+            const patterns = [
+                'Ascending Triangle',
+                'Support Level at $1995',
+                'RSI Oversold Signal'
+            ];
+            
+            patternContainer.innerHTML = patterns.map(pattern => `
+                <div class="pattern-item">
+                    <i class="fas fa-chart-line"></i>
+                    <span>${pattern}</span>
+                </div>
+            `).join('');
+        }
+    }
 
-        if (spreadElement) spreadElement.textContent = (Math.random() * 2).toFixed(1);
-        if (volumeElement) volumeElement.textContent = Math.floor(Math.random() * 10000);
-        if (atrElement) atrElement.textContent = (Math.random() * 5).toFixed(1);
-
-        // Update breakout status
-        this.updateBreakoutStatus();
+    async updatePerformanceStats() {
+        // Simulate loading performance data
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        const statsContainer = document.querySelector('.performance-stats .card-content');
+        if (statsContainer) {
+            const stats = {
+                'Win Rate': '68.5%',
+                'Profit Factor': '1.42',
+                'Max Drawdown': '3.2%'
+            };
+            
+            statsContainer.innerHTML = Object.entries(stats).map(([key, value]) => `
+                <div class="stat-item">
+                    <span class="stat-label">${key}:</span>
+                    <span class="stat-value">${value}</span>
+                </div>
+            `).join('');
+        }
     }
 
     updateChart() {

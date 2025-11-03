@@ -137,10 +137,77 @@ class ScannerPage {
         `;
     }
 
-    init() {
-        this.setupScannerControls();
-        this.setupResultsFilter();
+    async init() {
+        // Show skeleton screens while loading
+        this.showSkeletonScreens();
+        
+        try {
+            // Simulate loading delay for scanner initialization
+            await new Promise(resolve => setTimeout(resolve, 800));
+            
+            this.setupScannerControls();
+            this.setupResultsFilter();
+            
+            // Initialize pattern analysis with loading
+            await this.initializePatternAnalysis();
+            
+            // Load initial scan data
+            await this.loadInitialData();
+            
+            // Hide skeleton screens and show real content
+            this.hideSkeletonScreens();
+            
+        } catch (error) {
+            console.error('Error initializing scanner:', error);
+            this.hideSkeletonScreens();
+        }
+    }
+
+    showSkeletonScreens() {
+        const loadingManager = window.LoadingManager;
+        if (!loadingManager) return;
+
+        // Show skeleton for scan status
+        this.scanStatusSkeleton = loadingManager.showSkeleton('.scan-status .status-display', 'card', {
+            title: 'Scan Status',
+            lines: 3
+        });
+
+        // Show skeleton for scan results
+        this.scanResultsSkeleton = loadingManager.showSkeleton('#results-container', 'table', {
+            rows: 5,
+            columns: 4
+        });
+
+        // Show skeleton for pattern analysis
+        this.patternAnalysisSkeleton = loadingManager.showSkeleton('.pattern-analysis .pattern-grid', 'list', {
+            items: 3
+        });
+    }
+
+    hideSkeletonScreens() {
+        const loadingManager = window.LoadingManager;
+        if (!loadingManager) return;
+
+        // Hide all skeleton screens
+        if (this.scanStatusSkeleton) loadingManager.hideSkeleton(this.scanStatusSkeleton);
+        if (this.scanResultsSkeleton) loadingManager.hideSkeleton(this.scanResultsSkeleton);
+        if (this.patternAnalysisSkeleton) loadingManager.hideSkeleton(this.patternAnalysisSkeleton);
+    }
+
+    async initializePatternAnalysis() {
+        // Simulate loading pattern analysis
+        await new Promise(resolve => setTimeout(resolve, 600));
         this.startPatternAnalysis();
+    }
+
+    async loadInitialData() {
+        // Simulate loading initial scanner data
+        await new Promise(resolve => setTimeout(resolve, 400));
+        
+        // Initialize with some sample data
+        this.updateScanStats();
+        this.renderResults();
     }
 
     setupScannerControls() {
@@ -188,20 +255,45 @@ class ScannerPage {
         }
     }
 
-    startScanning() {
+    async startScanning() {
         this.isScanning = true;
         const startBtn = document.getElementById('start-scan');
         const stopBtn = document.getElementById('stop-scan');
         const statusText = document.getElementById('scan-status-text');
+        const loadingManager = window.LoadingManager;
 
         if (startBtn) startBtn.disabled = true;
         if (stopBtn) stopBtn.disabled = false;
-        if (statusText) statusText.textContent = 'Scanning for breakouts...';
+        if (statusText) statusText.textContent = 'Initializing scanner...';
 
-        // Start scanning process
-        this.scanInterval = setInterval(() => {
-            this.performScan();
-        }, 2000);
+        try {
+            // Show loading for scan initialization
+            if (loadingManager) {
+                loadingManager.showInlineLoading('.scan-status .status-display', 'Initializing scanner...');
+            }
+
+            // Simulate scanner initialization
+            await new Promise(resolve => setTimeout(resolve, 1000));
+
+            if (statusText) statusText.textContent = 'Scanning for breakouts...';
+
+            // Hide initialization loading
+            if (loadingManager) {
+                loadingManager.hideInlineLoading('.scan-status .status-display');
+            }
+
+            // Start scanning process
+            this.scanInterval = setInterval(() => {
+                this.performScan();
+            }, 2000);
+
+        } catch (error) {
+            console.error('Error starting scanner:', error);
+            if (loadingManager) {
+                loadingManager.hideInlineLoading('.scan-status .status-display');
+            }
+            this.stopScanning();
+        }
     }
 
     stopScanning() {
@@ -219,24 +311,67 @@ class ScannerPage {
         }
     }
 
-    performScan() {
-        // Simulate breakout detection
-        const confidence = Math.random() * 100;
-        const threshold = parseInt(document.getElementById('confidence-threshold')?.value || 75);
-        
-        if (confidence > threshold) {
-            const result = {
-                timestamp: new Date(),
-                type: Math.random() > 0.5 ? 'bullish' : 'bearish',
-                confidence: Math.round(confidence),
-                price: 2000 + (Math.random() * 100),
-                volume: Math.floor(Math.random() * 10000) + 1000
-            };
+    async performScan() {
+        if (!this.isScanning) return;
+
+        const loadingManager = window.LoadingManager;
+        const statusText = document.getElementById('scan-status-text');
+
+        try {
+            // Show scanning progress
+            if (statusText) statusText.textContent = 'Analyzing patterns...';
             
+            // Simulate pattern analysis time
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Simulate breakout detection
+            const confidence = Math.random() * 100;
+            const threshold = parseInt(document.getElementById('confidence-threshold')?.value || 75);
+            
+            if (confidence > threshold) {
+                const result = {
+                    timestamp: new Date(),
+                    type: Math.random() > 0.5 ? 'bullish' : 'bearish',
+                    confidence: Math.round(confidence),
+                    price: 2000 + (Math.random() * 100),
+                    volume: Math.floor(Math.random() * 10000) + 1000
+                };
+                
+                // Add result with loading animation
+                await this.addScanResultWithLoading(result);
+            }
+
+            this.updateScanStats();
+
+            // Reset status
+            if (statusText) statusText.textContent = 'Scanning for breakouts...';
+
+        } catch (error) {
+            console.error('Error during scan:', error);
+            if (statusText) statusText.textContent = 'Scan error - retrying...';
+        }
+    }
+
+    async addScanResultWithLoading(result) {
+        const loadingManager = window.LoadingManager;
+        const resultsContainer = document.getElementById('results-container');
+
+        if (loadingManager && resultsContainer) {
+            // Show brief loading for new result
+            loadingManager.showInlineLoading('#results-container', 'Adding new result...');
+            
+            // Simulate processing time
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            // Add the actual result
+            this.addScanResult(result);
+            
+            // Hide loading
+            loadingManager.hideInlineLoading('#results-container');
+        } else {
+            // Fallback to original method
             this.addScanResult(result);
         }
-
-        this.updateScanStats();
     }
 
     addScanResult(result) {
@@ -310,26 +445,60 @@ class ScannerPage {
     }
 
     startPatternAnalysis() {
-        // Simulate AI pattern detection
-        setInterval(() => {
+        // Simulate AI pattern analysis
+        this.patternInterval = setInterval(() => {
             this.updatePatternAnalysis();
-        }, 3000);
+        }, 5000);
+        
+        // Initial pattern analysis
+        this.updatePatternAnalysis();
     }
 
-    updatePatternAnalysis() {
-        const patterns = ['bull-flag', 'bear-flag', 'triangle'];
+    async updatePatternAnalysis() {
+        const loadingManager = window.LoadingManager;
+        const patternGrid = document.querySelector('.pattern-grid');
         
-        patterns.forEach(pattern => {
-            const confidence = Math.random() * 100;
-            const confidenceEl = document.getElementById(`${pattern}-confidence`);
-            const statusEl = document.getElementById(`${pattern}-status`);
-            
-            if (confidenceEl && statusEl) {
-                confidenceEl.textContent = Math.round(confidence) + '%';
-                statusEl.textContent = confidence > 70 ? 'Detected' : 'Not Detected';
-                statusEl.className = 'pattern-status ' + (confidence > 70 ? 'detected' : 'not-detected');
+        if (!patternGrid) return;
+
+        try {
+            // Show loading for pattern analysis
+            if (loadingManager) {
+                loadingManager.showInlineLoading('.pattern-analysis', 'Analyzing patterns with AI...');
             }
-        });
+
+            // Simulate AI processing time
+            await new Promise(resolve => setTimeout(resolve, 1500));
+
+            const patterns = [
+                { name: 'Head and Shoulders', probability: Math.floor(Math.random() * 20) + 80, status: 'forming' },
+                { name: 'Double Top', probability: Math.floor(Math.random() * 25) + 70, status: 'confirmed' },
+                { name: 'Ascending Triangle', probability: Math.floor(Math.random() * 15) + 85, status: 'breakout' },
+                { name: 'Bull Flag', probability: Math.floor(Math.random() * 30) + 65, status: 'forming' }
+            ];
+
+            // Update pattern display
+            patternGrid.innerHTML = patterns.map(pattern => `
+                <div class="pattern-item ${pattern.status}">
+                    <h4>${pattern.name}</h4>
+                    <div class="probability">${pattern.probability}%</div>
+                    <div class="status">${pattern.status}</div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" style="width: ${pattern.probability}%"></div>
+                    </div>
+                </div>
+            `).join('');
+
+            // Hide loading
+            if (loadingManager) {
+                loadingManager.hideInlineLoading('.pattern-analysis');
+            }
+
+        } catch (error) {
+            console.error('Error updating pattern analysis:', error);
+            if (loadingManager) {
+                loadingManager.hideInlineLoading('.pattern-analysis');
+            }
+        }
     }
 
     filterResults(filterType) {

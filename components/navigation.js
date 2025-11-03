@@ -1,12 +1,25 @@
 /**
- * Navigation Component - Responsive Navigation System
- * Handles routing, active states, dan mobile responsiveness
+ * Navigation Component - Enhanced Navigation System
+ * Handles routing, active states, breadcrumbs, and navigation history
  */
 class Navigation {
     constructor(router) {
         this.router = router;
         this.isMenuOpen = false;
         this.currentRoute = 'home';
+        this.navigationHistory = [];
+        this.maxHistoryLength = 10;
+        this.routeHierarchy = {
+            'dashboard': { parent: null, level: 0 },
+            'scanner': { parent: null, level: 0 },
+            'alerts': { parent: null, level: 0 },
+            'backtest': { parent: null, level: 0 },
+            'about': { parent: null, level: 0 },
+            // Sub-routes for future expansion
+            'scanner/results': { parent: 'scanner', level: 1 },
+            'alerts/settings': { parent: 'alerts', level: 1 },
+            'backtest/results': { parent: 'backtest', level: 1 }
+        };
     }
 
     render() {
@@ -150,13 +163,33 @@ class Navigation {
                     </div>
                 </div>
 
-                <!-- Navigation Breadcrumb -->
+                <!-- Enhanced Navigation Breadcrumb -->
                 <div class="nav-breadcrumb" id="nav-breadcrumb">
                     <div class="breadcrumb-container">
-                        <span class="breadcrumb-item">
-                            <i class="fas fa-home"></i>
-                            Dashboard
-                        </span>
+                        <!-- Navigation History Controls -->
+                        <div class="nav-history-controls">
+                            <button class="nav-history-btn" id="nav-back-btn" title="Go Back" disabled>
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <button class="nav-history-btn" id="nav-forward-btn" title="Go Forward" disabled>
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Breadcrumb Trail -->
+                        <div class="breadcrumb-trail">
+                            <span class="breadcrumb-item">
+                                <i class="fas fa-home"></i>
+                                Dashboard
+                            </span>
+                        </div>
+                        
+                        <!-- Page Actions -->
+                        <div class="page-actions">
+                            <button class="page-action-btn" id="refresh-page-btn" title="Refresh Page">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </nav>
@@ -192,11 +225,29 @@ class Navigation {
             });
         });
 
+        // Navigation history controls
+        const backBtn = document.getElementById('nav-back-btn');
+        const forwardBtn = document.getElementById('nav-forward-btn');
+        const refreshBtn = document.getElementById('refresh-page-btn');
+
+        if (backBtn) {
+            backBtn.addEventListener('click', () => this.goBack());
+        }
+
+        if (forwardBtn) {
+            forwardBtn.addEventListener('click', () => this.goForward());
+        }
+
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => this.refreshPage());
+        }
+
         // Listen to router events
         window.addEventListener('routeChanged', (e) => {
             this.currentRoute = e.detail.route;
             this.updateActiveRoute();
             this.updateBreadcrumb();
+            this.updateHistoryControls();
         });
     }
 
@@ -327,9 +378,68 @@ class Navigation {
 
     navigateToRoute(route) {
         if (this.router) {
+            // Add current route to history before navigating
+            this.addToHistory(this.currentRoute);
+            
             // Ensure route starts with slash
             const formattedRoute = route.startsWith('/') ? route : '/' + route;
             this.router.navigate(formattedRoute);
+            
+            // Update current route and UI
+            this.currentRoute = route;
+            this.updateHistoryControls();
+        }
+    }
+
+    addToHistory(route) {
+        if (route && route !== this.navigationHistory[this.navigationHistory.length - 1]) {
+            this.navigationHistory.push(route);
+            
+            // Limit history length
+            if (this.navigationHistory.length > this.maxHistoryLength) {
+                this.navigationHistory.shift();
+            }
+        }
+    }
+
+    goBack() {
+        if (this.navigationHistory.length > 0) {
+            const previousRoute = this.navigationHistory.pop();
+            if (previousRoute && previousRoute !== this.currentRoute) {
+                this.currentRoute = previousRoute;
+                if (this.router) {
+                    const formattedRoute = previousRoute.startsWith('/') ? previousRoute : '/' + previousRoute;
+                    this.router.navigate(formattedRoute);
+                }
+                this.updateHistoryControls();
+                this.updateActiveRoute();
+                this.updateBreadcrumb();
+            }
+        }
+    }
+
+    goForward() {
+        // For future implementation with forward history
+        console.log('Forward navigation - to be implemented');
+    }
+
+    refreshPage() {
+        if (this.router) {
+            const formattedRoute = this.currentRoute.startsWith('/') ? this.currentRoute : '/' + this.currentRoute;
+            this.router.navigate(formattedRoute);
+        }
+    }
+
+    updateHistoryControls() {
+        const backBtn = document.getElementById('nav-back-btn');
+        const forwardBtn = document.getElementById('nav-forward-btn');
+        
+        if (backBtn) {
+            backBtn.disabled = this.navigationHistory.length === 0;
+        }
+        
+        if (forwardBtn) {
+            forwardBtn.disabled = true; // For now, until forward history is implemented
         }
     }
 
@@ -355,34 +465,92 @@ class Navigation {
     }
 
     updateBreadcrumb() {
-        const breadcrumb = document.getElementById('nav-breadcrumb');
-        if (!breadcrumb) return;
+        const breadcrumbTrail = document.querySelector('.breadcrumb-trail');
+        if (!breadcrumbTrail) return;
 
         const routeNames = {
-            '/home': { icon: 'fas fa-home', name: 'Dashboard' },
-            '/dashboard': { icon: 'fas fa-home', name: 'Dashboard' },
-            '/scanner': { icon: 'fas fa-search', name: 'Scanner' },
-            '/alerts': { icon: 'fas fa-bell', name: 'Alerts' },
-            '/backtest': { icon: 'fas fa-chart-bar', name: 'Backtest' },
-            '/about': { icon: 'fas fa-info-circle', name: 'About' },
+            '/home': { icon: 'fas fa-home', name: 'Dashboard', description: 'Main dashboard overview' },
+            '/dashboard': { icon: 'fas fa-home', name: 'Dashboard', description: 'Main dashboard overview' },
+            '/scanner': { icon: 'fas fa-search', name: 'Scanner', description: 'Market scanning tools' },
+            '/alerts': { icon: 'fas fa-bell', name: 'Alerts', description: 'Trading alerts and notifications' },
+            '/backtest': { icon: 'fas fa-chart-bar', name: 'Backtest', description: 'Strategy backtesting' },
+            '/about': { icon: 'fas fa-info-circle', name: 'About', description: 'Application information' },
             // Support routes without slash for backward compatibility
-            'home': { icon: 'fas fa-home', name: 'Dashboard' },
-            'dashboard': { icon: 'fas fa-home', name: 'Dashboard' },
-            'scanner': { icon: 'fas fa-search', name: 'Scanner' },
-            'alerts': { icon: 'fas fa-bell', name: 'Alerts' },
-            'backtest': { icon: 'fas fa-chart-bar', name: 'Backtest' },
-            'about': { icon: 'fas fa-info-circle', name: 'About' }
+            'home': { icon: 'fas fa-home', name: 'Dashboard', description: 'Main dashboard overview' },
+            'dashboard': { icon: 'fas fa-home', name: 'Dashboard', description: 'Main dashboard overview' },
+            'scanner': { icon: 'fas fa-search', name: 'Scanner', description: 'Market scanning tools' },
+            'alerts': { icon: 'fas fa-bell', name: 'Alerts', description: 'Trading alerts and notifications' },
+            'backtest': { icon: 'fas fa-chart-bar', name: 'Backtest', description: 'Strategy backtesting' },
+            'about': { icon: 'fas fa-info-circle', name: 'About', description: 'Application information' },
+            // Sub-routes
+            'scanner/results': { icon: 'fas fa-list', name: 'Scan Results', description: 'Market scan results' },
+            'alerts/settings': { icon: 'fas fa-cog', name: 'Alert Settings', description: 'Configure alert preferences' },
+            'backtest/results': { icon: 'fas fa-chart-line', name: 'Backtest Results', description: 'Strategy performance results' }
         };
 
-        const route = routeNames[this.currentRoute];
-        if (route) {
-            breadcrumb.querySelector('.breadcrumb-container').innerHTML = `
-                <span class="breadcrumb-item">
-                    <i class="${route.icon}"></i>
-                    ${route.name}
+        // Build breadcrumb trail based on route hierarchy
+        const breadcrumbItems = this.buildBreadcrumbTrail(this.currentRoute, routeNames);
+        
+        breadcrumbTrail.innerHTML = breadcrumbItems.map((item, index) => {
+            const isLast = index === breadcrumbItems.length - 1;
+            const isClickable = !isLast && item.route;
+            
+            return `
+                <span class="breadcrumb-item ${isLast ? 'current' : ''} ${isClickable ? 'clickable' : ''}" 
+                      ${isClickable ? `data-route="${item.route}"` : ''} 
+                      title="${item.description || ''}">
+                    <i class="${item.icon}"></i>
+                    <span class="breadcrumb-text">${item.name}</span>
                 </span>
+                ${!isLast ? '<i class="breadcrumb-separator fas fa-chevron-right"></i>' : ''}
             `;
+        }).join('');
+
+        // Add click handlers for clickable breadcrumb items
+        breadcrumbTrail.querySelectorAll('.breadcrumb-item.clickable').forEach(item => {
+            item.addEventListener('click', () => {
+                const route = item.dataset.route;
+                if (route) {
+                    this.navigateToRoute(route);
+                }
+            });
+        });
+    }
+
+    buildBreadcrumbTrail(currentRoute, routeNames) {
+        const normalizedRoute = currentRoute.startsWith('/') ? currentRoute.slice(1) : currentRoute;
+        const routeInfo = routeNames[currentRoute] || routeNames[normalizedRoute];
+        
+        if (!routeInfo) {
+            return [{ icon: 'fas fa-home', name: 'Dashboard', route: 'dashboard' }];
         }
+
+        const trail = [];
+        
+        // Check if this is a sub-route
+        const hierarchy = this.routeHierarchy[normalizedRoute];
+        if (hierarchy && hierarchy.parent) {
+            // Add parent route
+            const parentInfo = routeNames[hierarchy.parent];
+            if (parentInfo) {
+                trail.push({
+                    icon: parentInfo.icon,
+                    name: parentInfo.name,
+                    route: hierarchy.parent,
+                    description: parentInfo.description
+                });
+            }
+        }
+        
+        // Add current route
+        trail.push({
+            icon: routeInfo.icon,
+            name: routeInfo.name,
+            route: null, // Current route is not clickable
+            description: routeInfo.description
+        });
+
+        return trail;
     }
 
     toggleMobileMenu() {

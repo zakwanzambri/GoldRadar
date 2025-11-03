@@ -295,11 +295,92 @@ class BacktestPage {
         `;
     }
 
-    init() {
-        this.setupConfigControls();
-        this.setupBacktestControls();
-        this.setupResultsTabs();
-        this.loadSavedResults();
+    async init() {
+        const loadingManager = window.LoadingManager;
+        
+        try {
+            // Show initial loading state
+            if (loadingManager) {
+                loadingManager.showInlineLoading('.backtest-page', 'Initializing backtest environment...');
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.backtest-page', 'Setting up configuration controls...');
+            }
+            
+            await this.setupConfigControlsWithLoading();
+            
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.backtest-page', 'Initializing backtest controls...');
+            }
+            
+            await this.setupBacktestControlsWithLoading();
+            
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.backtest-page', 'Setting up results interface...');
+            }
+            
+            await this.setupResultsTabsWithLoading();
+            
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.backtest-page', 'Loading saved results...');
+            }
+            
+            await this.loadSavedResultsWithLoading();
+            
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.backtest-page', 'Backtest environment ready!');
+            }
+            
+            // Brief delay to show completion
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+        } catch (error) {
+            console.error('Error initializing backtest page:', error);
+            if (loadingManager) {
+                loadingManager.showError('.backtest-page', 'Failed to initialize backtest environment');
+            }
+        } finally {
+            // Hide loading state
+            if (loadingManager) {
+                loadingManager.hideInlineLoading('.backtest-page');
+            }
+        }
+    }
+
+    async setupConfigControlsWithLoading() {
+        await new Promise(resolve => setTimeout(resolve, 150));
+        
+        // Range sliders
+        const sliders = ['confidence-threshold', 'position-size', 'stop-loss', 'take-profit'];
+        sliders.forEach(id => {
+            const slider = document.getElementById(id);
+            const valueSpan = document.getElementById(id.replace('-', '-') + '-value');
+            
+            if (slider && valueSpan) {
+                slider.addEventListener('input', (e) => {
+                    const value = e.target.value;
+                    const unit = id.includes('threshold') || id.includes('size') || 
+                                id.includes('loss') || id.includes('profit') ? '%' : '';
+                    valueSpan.textContent = value + unit;
+                });
+            }
+        });
+
+        // Quick date buttons
+        document.querySelectorAll('.quick-date').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const days = parseInt(e.target.dataset.days);
+                const endDate = new Date();
+                const startDate = new Date();
+                startDate.setDate(endDate.getDate() - days);
+                
+                document.getElementById('start-date').value = this.formatDate(startDate);
+                document.getElementById('end-date').value = this.formatDate(endDate);
+            });
+        });
     }
 
     setupConfigControls() {
@@ -333,6 +414,25 @@ class BacktestPage {
         });
     }
 
+    async setupBacktestControlsWithLoading() {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        const runBtn = document.getElementById('run-backtest');
+        const stopBtn = document.getElementById('stop-backtest');
+
+        if (runBtn) {
+            runBtn.addEventListener('click', () => {
+                this.runBacktest();
+            });
+        }
+
+        if (stopBtn) {
+            stopBtn.addEventListener('click', () => {
+                this.stopBacktest();
+            });
+        }
+    }
+
     setupBacktestControls() {
         const runBtn = document.getElementById('run-backtest');
         const stopBtn = document.getElementById('stop-backtest');
@@ -348,6 +448,17 @@ class BacktestPage {
                 this.stopBacktest();
             });
         }
+    }
+
+    async setupResultsTabsWithLoading() {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const tabName = e.target.dataset.tab;
+                this.switchTab(tabName);
+            });
+        });
     }
 
     setupResultsTabs() {
@@ -372,22 +483,67 @@ class BacktestPage {
     async runBacktest() {
         if (this.isRunning) return;
 
+        const loadingManager = window.LoadingManager;
         this.isRunning = true;
-        const config = this.getBacktestConfig();
         
-        // Show progress
-        document.getElementById('backtest-progress').style.display = 'block';
-        document.getElementById('backtest-results').style.display = 'none';
-
         try {
+            // Show initial loading state
+            if (loadingManager) {
+                loadingManager.showInlineLoading('.backtest-config', 'Validating configuration...');
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            const config = this.getBacktestConfig();
+            
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.backtest-config', 'Preparing backtest environment...');
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            // Show progress
+            document.getElementById('backtest-progress').style.display = 'block';
+            document.getElementById('backtest-results').style.display = 'none';
+
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.backtest-config', 'Starting backtest execution...');
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
             const results = await this.executeBacktest(config);
+            
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.backtest-config', 'Processing results...');
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
             this.displayResults(results);
+            
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.backtest-config', 'Backtest completed successfully!');
+            }
+            
+            // Brief delay to show completion
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
         } catch (error) {
             console.error('Backtest error:', error);
             this.showNotification('Backtest failed: ' + error.message, 'error');
+            
+            if (loadingManager) {
+                loadingManager.showError('.backtest-config', 'Backtest execution failed');
+            }
         } finally {
             this.isRunning = false;
             document.getElementById('backtest-progress').style.display = 'none';
+            
+            // Hide loading state
+            if (loadingManager) {
+                loadingManager.hideInlineLoading('.backtest-config');
+            }
         }
     }
 
@@ -406,57 +562,109 @@ class BacktestPage {
     }
 
     async executeBacktest(config) {
-        // Simulate backtest execution
-        const totalDays = this.getDaysBetween(new Date(config.startDate), new Date(config.endDate));
-        const trades = [];
-        let equity = config.initialCapital;
-        let maxEquity = equity;
-        let maxDrawdown = 0;
+        const loadingManager = window.LoadingManager;
         
-        for (let day = 0; day < totalDays; day++) {
-            // Update progress
-            const progress = (day / totalDays) * 100;
-            this.updateProgress(progress, `Processing day ${day + 1} of ${totalDays}`);
-            
-            // Simulate trade generation (random for demo)
-            if (Math.random() < 0.1) { // 10% chance of trade per day
-                const trade = this.generateRandomTrade(config, day);
-                trades.push(trade);
-                equity += trade.pnl;
-                
-                if (equity > maxEquity) {
-                    maxEquity = equity;
-                }
-                
-                const drawdown = ((maxEquity - equity) / maxEquity) * 100;
-                if (drawdown > maxDrawdown) {
-                    maxDrawdown = drawdown;
-                }
-
-                // Update live stats
-                document.getElementById('trades-count').textContent = trades.length;
-                document.getElementById('current-pnl').textContent = 
-                    '$' + (equity - config.initialCapital).toFixed(2);
-                
-                const winRate = trades.length > 0 ? 
-                    (trades.filter(t => t.pnl > 0).length / trades.length * 100).toFixed(1) : 0;
-                document.getElementById('current-winrate').textContent = winRate + '%';
+        try {
+            // Initial setup phase
+            if (loadingManager) {
+                loadingManager.showInlineLoading('.backtest-progress', 'Initializing backtest parameters...');
             }
             
-            // Small delay to show progress
-            await new Promise(resolve => setTimeout(resolve, 10));
-        }
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            // Simulate backtest execution
+            const totalDays = this.getDaysBetween(new Date(config.startDate), new Date(config.endDate));
+            const trades = [];
+            let equity = config.initialCapital;
+            let maxEquity = equity;
+            let maxDrawdown = 0;
+            
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.backtest-progress', 'Loading historical market data...');
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.backtest-progress', 'Applying trading strategy...');
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            for (let day = 0; day < totalDays; day++) {
+                // Update progress with more detailed messages
+                const progress = (day / totalDays) * 100;
+                
+                if (day % Math.floor(totalDays / 10) === 0 && loadingManager) {
+                    const phase = Math.floor((day / totalDays) * 10) + 1;
+                    loadingManager.updateInlineLoadingMessage('.backtest-progress', 
+                        `Executing backtest phase ${phase}/10...`);
+                }
+                
+                this.updateProgress(progress, `Processing day ${day + 1} of ${totalDays}`);
+                
+                // Simulate trade generation (random for demo)
+                if (Math.random() < 0.1) { // 10% chance of trade per day
+                    const trade = this.generateRandomTrade(config, day);
+                    trades.push(trade);
+                    equity += trade.pnl;
+                    
+                    if (equity > maxEquity) {
+                        maxEquity = equity;
+                    }
+                    
+                    const drawdown = ((maxEquity - equity) / maxEquity) * 100;
+                    if (drawdown > maxDrawdown) {
+                        maxDrawdown = drawdown;
+                    }
 
-        return {
-            config,
-            trades,
-            finalEquity: equity,
-            totalReturn: ((equity - config.initialCapital) / config.initialCapital) * 100,
-            maxDrawdown,
-            winRate: trades.length > 0 ? (trades.filter(t => t.pnl > 0).length / trades.length) * 100 : 0,
-            profitFactor: this.calculateProfitFactor(trades),
-            sharpeRatio: this.calculateSharpeRatio(trades)
-        };
+                    // Update live stats
+                    document.getElementById('trades-count').textContent = trades.length;
+                    document.getElementById('current-pnl').textContent = 
+                        '$' + (equity - config.initialCapital).toFixed(2);
+                    
+                    const winRate = trades.length > 0 ? 
+                        (trades.filter(t => t.pnl > 0).length / trades.length * 100).toFixed(1) : 0;
+                    document.getElementById('current-winrate').textContent = winRate + '%';
+                }
+                
+                // Small delay to show progress
+                await new Promise(resolve => setTimeout(resolve, 10));
+            }
+
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.backtest-progress', 'Calculating performance metrics...');
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            if (loadingManager) {
+                loadingManager.updateInlineLoadingMessage('.backtest-progress', 'Generating final results...');
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 200));
+
+            return {
+                config,
+                trades,
+                finalEquity: equity,
+                totalReturn: ((equity - config.initialCapital) / config.initialCapital) * 100,
+                maxDrawdown,
+                winRate: trades.length > 0 ? (trades.filter(t => t.pnl > 0).length / trades.length) * 100 : 0,
+                profitFactor: this.calculateProfitFactor(trades),
+                sharpeRatio: this.calculateSharpeRatio(trades)
+            };
+            
+        } catch (error) {
+            if (loadingManager) {
+                loadingManager.showError('.backtest-progress', 'Backtest execution failed');
+            }
+            throw error;
+        } finally {
+            if (loadingManager) {
+                loadingManager.hideInlineLoading('.backtest-progress');
+            }
+        }
     }
 
     generateRandomTrade(config, day) {
@@ -578,6 +786,11 @@ class BacktestPage {
         }
 
         localStorage.setItem('goldradar-backtest-results', JSON.stringify(savedResults));
+        this.renderSavedResults();
+    }
+
+    async loadSavedResultsWithLoading() {
+        await new Promise(resolve => setTimeout(resolve, 200));
         this.renderSavedResults();
     }
 
