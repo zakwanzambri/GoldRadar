@@ -237,6 +237,7 @@
     
     <!-- Router System -->
     <script src="utils/performance.js"></script>
+    <script src="utils/analytics.js"></script>
     <script src="router.js"></script>
     <script src="components/navigation.js"></script>
     
@@ -254,6 +255,7 @@
         <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
             <strong>Metrics</strong>
             <button id="metrics-toggle" style="background: transparent; border: 1px solid #fff; color: #fff; padding: 2px 6px; border-radius: 6px; font-size: 11px; cursor: pointer;">Hide</button>
+            <button id="metrics-export" style="background: transparent; border: 1px solid #fff; color: #fff; padding: 2px 6px; border-radius: 6px; font-size: 11px; cursor: pointer;">Export</button>
         </div>
         <div id="metrics-content">
             <div>Avg Load: <span id="metrics-avg-load">0ms</span></div>
@@ -286,9 +288,11 @@
 
                 // Create GoldBreakoutScanner instance
                 const goldScanner = new GoldBreakoutScanner();
+                window.goldScanner = goldScanner;
                 
                 // Initialize router and navigation
                 const router = new GoldRadarRouter();
+                window.router = router;
                 const navigation = new Navigation(router);
                 
                 // Register all pages with optimization options BEFORE initializing router
@@ -327,6 +331,12 @@
                 
                 // Initialize the gold scanner
                 goldScanner.init();
+
+                // Initialize analytics
+                if (typeof Analytics !== 'undefined') {
+                    window.analytics = new Analytics({ flushIntervalMs: 60000, nightlyBeacon: true, snapshotHour: 3 });
+                    window.analytics.init();
+                }
                 
                 console.log('Application initialized successfully');
                 
@@ -338,6 +348,7 @@
                 const memoryTrendEl = document.getElementById('metrics-memory-trend');
                 const metricsContent = document.getElementById('metrics-content');
                 const metricsToggle = document.getElementById('metrics-toggle');
+                const metricsExport = document.getElementById('metrics-export');
                 if (overlay && avgEl && interactionsEl && window.performanceMonitor) {
                     setInterval(() => {
                         try {
@@ -358,6 +369,27 @@
                         const hidden = metricsContent.style.display === 'none';
                         metricsContent.style.display = hidden ? 'block' : 'none';
                         metricsToggle.textContent = hidden ? 'Hide' : 'Show';
+                    });
+                }
+
+                // Export metrics as JSON download
+                if (metricsExport && window.performanceMonitor) {
+                    metricsExport.addEventListener('click', () => {
+                        try {
+                            const json = window.performanceMonitor.exportMetrics();
+                            const blob = new Blob([json], { type: 'application/json' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+                            a.href = url;
+                            a.download = `goldradar-metrics-${stamp}.json`;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                        } catch (e) {
+                            console.error('Failed to export metrics:', e);
+                        }
                     });
                 }
                 

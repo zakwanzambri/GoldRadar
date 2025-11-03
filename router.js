@@ -299,11 +299,24 @@ class GoldRadarRouter {
             // Record performance metrics
             const loadTime = performance.now() - startTime;
             this.performanceMetrics.pageLoadTimes.set(path, loadTime);
+            // Forward to global performance monitor
+            if (window.performanceMonitor && typeof window.performanceMonitor.recordPageLoad === 'function') {
+                try {
+                    window.performanceMonitor.recordPageLoad(path, loadTime);
+                } catch (e) {
+                    // noop
+                }
+            }
             
             // Log performance for debugging
             if (loadTime > 100) {
                 console.log(`Page ${path} loaded in ${loadTime.toFixed(2)}ms`);
             }
+
+            // Emit detailed route loaded event for analytics consumers
+            window.dispatchEvent(new CustomEvent('routeLoaded', {
+                detail: { route: path, page: this.currentPage, loadTime }
+            }));
             
         } catch (error) {
             console.error(`Error loading page ${path}:`, error);

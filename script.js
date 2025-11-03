@@ -279,35 +279,58 @@ class GoldBreakoutScanner {
                 e.target.classList.add('active');
                 this.currentTimeframe = parseInt(e.target.dataset.tf);
                 this.loadHistoricalData();
+                // Analytics: timeframe change
+                if (window.analytics && typeof window.analytics.trackEvent === 'function') {
+                    window.analytics.trackEvent('timeframe_change', { timeframe: this.currentTimeframe, elementId: e.target.id || null });
+                }
             });
         });
 
         // Alert settings
         document.getElementById('alerts-enabled').addEventListener('change', (e) => {
             this.alertsEnabled = e.target.checked;
+            // Analytics: alerts toggle
+            if (window.analytics && typeof window.analytics.trackEvent === 'function') {
+                window.analytics.trackEvent('alerts_toggle', { enabled: this.alertsEnabled, elementId: 'alerts-enabled' });
+            }
         });
 
         // Chart controls
         document.getElementById('auto-scale').addEventListener('click', () => {
             this.chart.timeScale().fitContent();
+            if (window.analytics && typeof window.analytics.trackEvent === 'function') {
+                window.analytics.trackEvent('chart_auto_scale', { elementId: 'auto-scale' });
+            }
         });
 
         document.getElementById('reset-zoom').addEventListener('click', () => {
             this.chart.timeScale().resetTimeScale();
+            if (window.analytics && typeof window.analytics.trackEvent === 'function') {
+                window.analytics.trackEvent('chart_reset_zoom', { elementId: 'reset-zoom' });
+            }
         });
 
         // Modal controls
         document.querySelector('.close').addEventListener('click', () => {
             document.getElementById('alert-modal').style.display = 'none';
+            if (window.analytics && typeof window.analytics.trackEvent === 'function') {
+                window.analytics.trackEvent('alert_dismiss', { element: '.close' });
+            }
         });
 
         document.getElementById('dismiss-alert').addEventListener('click', () => {
             document.getElementById('alert-modal').style.display = 'none';
+            if (window.analytics && typeof window.analytics.trackEvent === 'function') {
+                window.analytics.trackEvent('alert_dismiss', { elementId: 'dismiss-alert' });
+            }
         });
 
         // Backtesting
         document.getElementById('run-backtest').addEventListener('click', () => {
             this.runBacktest();
+            if (window.analytics && typeof window.analytics.trackEvent === 'function') {
+                window.analytics.trackEvent('backtest_run', { elementId: 'run-backtest' });
+            }
         });
     }
 
