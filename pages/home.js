@@ -174,6 +174,7 @@ class HomePage {
     }
 
     async init() {
+        const tStart = performance.now();
         // Show skeleton screens while loading
         this.showSkeletonScreens();
         
@@ -190,6 +191,11 @@ class HomePage {
             
             // Hide skeleton screens and show real content
             this.hideSkeletonScreens();
+            // Record page load time and emit pageReady
+            if (window.performanceMonitor) {
+                window.performanceMonitor.recordPageLoad('HomePage', performance.now() - tStart);
+            }
+            document.dispatchEvent(new CustomEvent('pageReady', { detail: { page: 'home' } }));
             
             console.log('HomePage: Initialization completed successfully');
         } catch (error) {
@@ -407,7 +413,7 @@ class HomePage {
         } catch (error) {
             console.error('HomePage: Chart initialization failed:', error);
             if (loadingUtil) {
-                loadingUtil.showError('.chart-container', 'Failed to initialize chart');
+                loadingUtil.showRetryError('.chart-container', 'Chart initialization failed. Tap Retry to try again.', () => this.initializeChart());
             }
         } finally {
             // Hide loading state
@@ -716,6 +722,7 @@ class HomePage {
 
     destroy() {
         // Cleanup when leaving page
+        const tStart = performance.now();
         if (this.goldScanner) {
             this.goldScanner.stopRealTimeUpdates();
         }
@@ -728,6 +735,10 @@ class HomePage {
         if (this.updateInterval) {
             clearInterval(this.updateInterval);
             this.updateInterval = null;
+        }
+        // Record cleanup duration as a performance interaction
+        if (window.performanceMonitor) {
+            window.performanceMonitor.recordInteraction('cleanup', 'HomePage.destroy', performance.now() - tStart);
         }
     }
 }

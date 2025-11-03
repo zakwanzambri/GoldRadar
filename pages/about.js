@@ -382,9 +382,16 @@ class AboutPage {
     }
 
     init() {
+        const tStart = performance.now();
         this.setupFAQ();
         this.startUptime();
         this.updateLastUpdate();
+
+        // Record page load time and emit pageReady
+        if (window.performanceMonitor) {
+            window.performanceMonitor.recordPageLoad('AboutPage', performance.now() - tStart);
+        }
+        document.dispatchEvent(new CustomEvent('pageReady', { detail: { page: 'about' } }));
     }
 
     setupFAQ() {
@@ -439,6 +446,11 @@ class AboutPage {
 
     destroy() {
         // Cleanup when leaving page
+        const tStart = performance.now();
+        // Currently no dynamic listeners to remove
+        if (window.performanceMonitor) {
+            window.performanceMonitor.recordInteraction('cleanup', 'AboutPage.destroy', performance.now() - tStart);
+        }
     }
 }
 

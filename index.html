@@ -203,7 +203,7 @@
             </div>
         </div>
         </div>
-    </div>
+</div>
 
     <!-- Alert Modal -->
     <div id="alert-modal" class="modal">
@@ -248,6 +248,20 @@
     <script src="pages/about.js"></script>
     
     <!-- Application Initialization -->
+    
+    <!-- Metrics Overlay (optional) -->
+    <div id="metrics-overlay" style="position: fixed; bottom: 12px; right: 12px; background: rgba(0,0,0,0.7); color: #fff; padding: 8px 12px; border-radius: 8px; font-size: 12px; z-index: 9999; box-shadow: 0 2px 8px rgba(0,0,0,0.25);">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+            <strong>Metrics</strong>
+            <button id="metrics-toggle" style="background: transparent; border: 1px solid #fff; color: #fff; padding: 2px 6px; border-radius: 6px; font-size: 11px; cursor: pointer;">Hide</button>
+        </div>
+        <div id="metrics-content">
+            <div>Avg Load: <span id="metrics-avg-load">0ms</span></div>
+            <div>Interactions: <span id="metrics-interactions">0</span></div>
+            <div>Error Rate: <span id="metrics-error-rate">0</span></div>
+            <div>Memory Trend: <span id="metrics-memory-trend">stable</span></div>
+        </div>
+    </div>
     <script>
         // Initialize the application with routing system
         document.addEventListener('DOMContentLoaded', function() {
@@ -315,6 +329,37 @@
                 goldScanner.init();
                 
                 console.log('Application initialized successfully');
+                
+                // Update metrics overlay periodically
+                const overlay = document.getElementById('metrics-overlay');
+                const avgEl = document.getElementById('metrics-avg-load');
+                const interactionsEl = document.getElementById('metrics-interactions');
+                const errorRateEl = document.getElementById('metrics-error-rate');
+                const memoryTrendEl = document.getElementById('metrics-memory-trend');
+                const metricsContent = document.getElementById('metrics-content');
+                const metricsToggle = document.getElementById('metrics-toggle');
+                if (overlay && avgEl && interactionsEl && window.performanceMonitor) {
+                    setInterval(() => {
+                        try {
+                            const metrics = window.performanceMonitor.getMetrics();
+                            avgEl.textContent = `${Math.round(metrics.averagePageLoadTime)}ms`;
+                            interactionsEl.textContent = metrics.interactions.length;
+                            if (errorRateEl) errorRateEl.textContent = metrics.errorRate;
+                            if (memoryTrendEl) memoryTrendEl.textContent = metrics.memoryTrend;
+                        } catch (e) {
+                            // noop
+                        }
+                    }, 2000);
+                }
+
+                // Toggle hide/show overlay
+                if (metricsToggle && metricsContent) {
+                    metricsToggle.addEventListener('click', () => {
+                        const hidden = metricsContent.style.display === 'none';
+                        metricsContent.style.display = hidden ? 'block' : 'none';
+                        metricsToggle.textContent = hidden ? 'Hide' : 'Show';
+                    });
+                }
                 
             } catch (error) {
                 console.error('Failed to initialize application:', error);

@@ -216,6 +216,7 @@ class AlertsPage {
     }
 
     async init() {
+        const tStart = performance.now();
         // Show skeleton screens while loading
         this.showSkeletonScreens();
         
@@ -235,10 +236,19 @@ class AlertsPage {
             
             // Hide skeleton screens and show real content
             this.hideSkeletonScreens();
+            // Record page load time and emit pageReady
+            if (window.performanceMonitor) {
+                window.performanceMonitor.recordPageLoad('AlertsPage', performance.now() - tStart);
+            }
+            document.dispatchEvent(new CustomEvent('pageReady', { detail: { page: 'alerts' } }));
             
         } catch (error) {
             console.error('Error initializing alerts:', error);
             this.hideSkeletonScreens();
+            const loadingUtil = window.LoadingUtil;
+            if (loadingUtil) {
+                loadingUtil.showRetryError('.alerts-page', 'Failed to initialize alerts', () => this.init());
+            }
         }
     }
 
@@ -304,6 +314,7 @@ class AlertsPage {
             console.error('Error loading alerts:', error);
             if (loadingUtil) {
                 loadingUtil.hideInline('#active-alerts-container');
+                loadingUtil.showRetryError('#active-alerts-container', 'Loading alerts failed. Tap Retry to try again.', () => this.loadAlertsWithLoading());
             }
         }
     }
@@ -458,6 +469,7 @@ class AlertsPage {
             console.error('Error rendering alerts:', error);
             if (loadingUtil) {
                 loadingUtil.hideInline('#active-alerts-container');
+                loadingUtil.showRetryError('#active-alerts-container', 'Updating alerts failed. Tap Retry to try again.', () => this.renderActiveAlertsWithLoading());
             }
         }
     }
@@ -485,6 +497,7 @@ class AlertsPage {
             console.error('Error updating stats:', error);
             if (loadingUtil) {
                 loadingUtil.hideInline('.alert-stats');
+                loadingUtil.showRetryError('.alert-stats', 'Updating statistics failed. Tap Retry to try again.', () => this.updateAlertStatsWithLoading());
             }
         }
     }
@@ -816,6 +829,7 @@ class AlertsPage {
 
     destroy() {
         // Save alerts before leaving
+        const tStart = performance.now();
         localStorage.setItem('goldradar-alerts', JSON.stringify(this.alerts));
         // Cleanup inline loaders
         const loadingUtil = window.LoadingUtil;
@@ -823,6 +837,10 @@ class AlertsPage {
             loadingUtil.hideInline('#active-alerts-container');
             loadingUtil.hideInline('#alert-history-container');
             loadingUtil.hideInline('.alert-stats');
+        }
+        // Record cleanup duration
+        if (window.performanceMonitor) {
+            window.performanceMonitor.recordInteraction('cleanup', 'AlertsPage.destroy', performance.now() - tStart);
         }
     }
 }

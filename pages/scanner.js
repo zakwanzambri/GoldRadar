@@ -138,6 +138,7 @@ class ScannerPage {
     }
 
     async init() {
+        const tStart = performance.now();
         // Show skeleton screens while loading
         this.showSkeletonScreens();
         
@@ -156,10 +157,19 @@ class ScannerPage {
             
             // Hide skeleton screens and show real content
             this.hideSkeletonScreens();
+            // Record page load time and emit pageReady
+            if (window.performanceMonitor) {
+                window.performanceMonitor.recordPageLoad('ScannerPage', performance.now() - tStart);
+            }
+            document.dispatchEvent(new CustomEvent('pageReady', { detail: { page: 'scanner' } }));
             
         } catch (error) {
             console.error('Error initializing scanner:', error);
             this.hideSkeletonScreens();
+            const loadingUtil = window.LoadingUtil;
+            if (loadingUtil) {
+                loadingUtil.showRetryError('.scanner-page', 'Failed to initialize scanner', () => this.init());
+            }
         }
     }
 
@@ -291,6 +301,7 @@ class ScannerPage {
             console.error('Error starting scanner:', error);
             if (loadingUtil) {
                 loadingUtil.hideInline('.scan-status .status-display');
+                loadingUtil.showRetryError('.scan-status .status-display', 'Scanner initialization failed', () => this.startScanning());
             }
             this.stopScanning();
         }
@@ -349,6 +360,10 @@ class ScannerPage {
         } catch (error) {
             console.error('Error during scan:', error);
             if (statusText) statusText.textContent = 'Scan error - retrying...';
+            const loadingUtil = window.LoadingUtil;
+            if (loadingUtil) {
+                loadingUtil.showRetryError('#results-container', 'Scan failed. Tap Retry to try again.', () => this.performScan());
+            }
         }
     }
 
@@ -497,6 +512,7 @@ class ScannerPage {
             console.error('Error updating pattern analysis:', error);
             if (loadingUtil) {
                 loadingUtil.hideInline('.pattern-analysis');
+                loadingUtil.showRetryError('.pattern-analysis', 'Pattern analysis failed. Tap Retry to try again.', () => this.updatePatternAnalysis());
             }
         }
     }
@@ -516,6 +532,7 @@ class ScannerPage {
     }
 
     destroy() {
+        const tStart = performance.now();
         if (this.scanInterval) {
             clearInterval(this.scanInterval);
         }
@@ -526,6 +543,10 @@ class ScannerPage {
             loadingUtil.hideInline('.scan-status .status-display');
             loadingUtil.hideInline('#results-container');
             loadingUtil.hideInline('.pattern-analysis');
+        }
+        // Record cleanup duration
+        if (window.performanceMonitor) {
+            window.performanceMonitor.recordInteraction('cleanup', 'ScannerPage.destroy', performance.now() - tStart);
         }
     }
 }

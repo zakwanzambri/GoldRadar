@@ -296,6 +296,7 @@ class BacktestPage {
     }
 
     async init() {
+        const tStart = performance.now();
         const loadingManager = window.LoadingManager;
         
         try {
@@ -339,14 +340,21 @@ class BacktestPage {
             
         } catch (error) {
             console.error('Error initializing backtest page:', error);
-            if (loadingManager) {
-                loadingManager.showError('.backtest-page', 'Failed to initialize backtest environment');
+            const loadingUtil = window.LoadingUtil;
+            if (loadingUtil) {
+                loadingUtil.showRetryError('.backtest-page', 'Backtest initialization failed. Tap Retry to try again.', () => this.init());
             }
         } finally {
             // Hide loading state
-            if (loadingManager) {
-                loadingManager.hideInlineLoading('.backtest-page');
+            const loadingUtil = window.LoadingUtil;
+            if (loadingUtil) {
+                loadingUtil.hideInline('.backtest-page');
             }
+            // Record page load time and emit pageReady
+            if (window.performanceMonitor) {
+                window.performanceMonitor.recordPageLoad('BacktestPage', performance.now() - tStart);
+            }
+            document.dispatchEvent(new CustomEvent('pageReady', { detail: { page: 'backtest' } }));
         }
     }
 
@@ -484,6 +492,7 @@ class BacktestPage {
         if (this.isRunning) return;
 
         const loadingUtil = window.LoadingUtil;
+        const tStart = performance.now();
         this.isRunning = true;
         
         try {
@@ -534,7 +543,9 @@ class BacktestPage {
             this.showNotification('Backtest failed: ' + error.message, 'error');
             
             if (loadingUtil) {
-                loadingUtil.showError('.backtest-config', 'Backtest execution failed');
+                loadingUtil.showRetryError('.backtest-config', 'Backtest failed. Tap Retry to try again.', () => {
+                    if (!this.isRunning) this.runBacktest();
+                });
             }
         } finally {
             this.isRunning = false;
@@ -543,6 +554,10 @@ class BacktestPage {
             // Hide loading state
             if (loadingUtil) {
                 loadingUtil.hideInline('.backtest-config');
+            }
+            // Record backtest run duration
+            if (window.performanceMonitor) {
+                window.performanceMonitor.recordMetric('BacktestPage_backtest_run_ms', performance.now() - tStart);
             }
         }
     }
@@ -914,10 +929,14 @@ class BacktestPage {
 
     destroy() {
         // Cleanup when leaving page
+        const tStart = performance.now();
         this.isRunning = false;
         const loadingUtil = window.LoadingUtil;
         if (loadingUtil) {
             loadingUtil.hideInline('.backtest-config');
+        }
+        if (window.performanceMonitor) {
+            window.performanceMonitor.recordInteraction('cleanup', 'BacktestPage.destroy', performance.now() - tStart);
         }
     }
 }
