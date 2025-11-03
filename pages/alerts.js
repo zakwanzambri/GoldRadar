@@ -282,12 +282,12 @@ class AlertsPage {
     }
 
     async loadAlertsWithLoading() {
-        const loadingManager = window.LoadingManager;
+        const loadingUtil = window.LoadingUtil;
         
         try {
             // Show loading for alerts data
-            if (loadingManager) {
-                loadingManager.showInlineLoading('#active-alerts-container', 'Loading alerts...');
+            if (loadingUtil) {
+                loadingUtil.showInline('#active-alerts-container', 'Loading alerts...');
             }
 
             // Simulate loading alerts from storage/server
@@ -296,14 +296,14 @@ class AlertsPage {
             this.loadAlerts();
             
             // Hide loading
-            if (loadingManager) {
-                loadingManager.hideInlineLoading('#active-alerts-container');
+            if (loadingUtil) {
+                loadingUtil.hideInline('#active-alerts-container');
             }
 
         } catch (error) {
             console.error('Error loading alerts:', error);
-            if (loadingManager) {
-                loadingManager.hideInlineLoading('#active-alerts-container');
+            if (loadingUtil) {
+                loadingUtil.hideInline('#active-alerts-container');
             }
         }
     }
@@ -436,12 +436,12 @@ class AlertsPage {
     }
 
     async renderActiveAlertsWithLoading() {
-        const loadingManager = window.LoadingManager;
+        const loadingUtil = window.LoadingUtil;
         
         try {
             // Show brief loading for alerts update
-            if (loadingManager) {
-                loadingManager.showInlineLoading('#active-alerts-container', 'Updating alerts...');
+            if (loadingUtil) {
+                loadingUtil.showInline('#active-alerts-container', 'Updating alerts...');
             }
 
             // Simulate processing time
@@ -450,25 +450,25 @@ class AlertsPage {
             this.renderActiveAlerts();
             
             // Hide loading
-            if (loadingManager) {
-                loadingManager.hideInlineLoading('#active-alerts-container');
+            if (loadingUtil) {
+                loadingUtil.hideInline('#active-alerts-container');
             }
 
         } catch (error) {
             console.error('Error rendering alerts:', error);
-            if (loadingManager) {
-                loadingManager.hideInlineLoading('#active-alerts-container');
+            if (loadingUtil) {
+                loadingUtil.hideInline('#active-alerts-container');
             }
         }
     }
 
     async updateAlertStatsWithLoading() {
-        const loadingManager = window.LoadingManager;
+        const loadingUtil = window.LoadingUtil;
         
         try {
             // Show brief loading for stats update
-            if (loadingManager) {
-                loadingManager.showInlineLoading('.alert-stats', 'Updating statistics...');
+            if (loadingUtil) {
+                loadingUtil.showInline('.alert-stats', 'Updating statistics...');
             }
 
             // Simulate processing time
@@ -477,14 +477,14 @@ class AlertsPage {
             this.updateAlertStats();
             
             // Hide loading
-            if (loadingManager) {
-                loadingManager.hideInlineLoading('.alert-stats');
+            if (loadingUtil) {
+                loadingUtil.hideInline('.alert-stats');
             }
 
         } catch (error) {
             console.error('Error updating stats:', error);
-            if (loadingManager) {
-                loadingManager.hideInlineLoading('.alert-stats');
+            if (loadingUtil) {
+                loadingUtil.hideInline('.alert-stats');
             }
         }
     }
@@ -718,15 +718,15 @@ class AlertsPage {
     }
 
     async loadAlertHistory() {
-        const loadingManager = window.LoadingManager;
+        const loadingUtil = window.LoadingUtil;
         const historyContainer = document.getElementById('alert-history-container');
         
         if (!historyContainer) return;
 
         try {
             // Show loading for history
-            if (loadingManager) {
-                loadingManager.showInlineLoading('#alert-history-container', 'Loading alert history...');
+            if (loadingUtil) {
+                loadingUtil.showInline('#alert-history-container', 'Loading alert history...');
             }
 
             // Simulate loading history from server/storage
@@ -738,14 +738,14 @@ class AlertsPage {
             this.renderAlertHistory(sampleHistory);
             
             // Hide loading
-            if (loadingManager) {
-                loadingManager.hideInlineLoading('#alert-history-container');
+            if (loadingUtil) {
+                loadingUtil.hideInline('#alert-history-container');
             }
 
         } catch (error) {
             console.error('Error loading alert history:', error);
-            if (loadingManager) {
-                loadingManager.hideInlineLoading('#alert-history-container');
+            if (loadingUtil) {
+                loadingUtil.hideInline('#alert-history-container');
             }
         }
     }
@@ -817,6 +817,13 @@ class AlertsPage {
     destroy() {
         // Save alerts before leaving
         localStorage.setItem('goldradar-alerts', JSON.stringify(this.alerts));
+        // Cleanup inline loaders
+        const loadingUtil = window.LoadingUtil;
+        if (loadingUtil) {
+            loadingUtil.hideInline('#active-alerts-container');
+            loadingUtil.hideInline('#alert-history-container');
+            loadingUtil.hideInline('.alert-stats');
+        }
     }
 }
 

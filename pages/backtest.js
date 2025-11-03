@@ -483,21 +483,21 @@ class BacktestPage {
     async runBacktest() {
         if (this.isRunning) return;
 
-        const loadingManager = window.LoadingManager;
+        const loadingUtil = window.LoadingUtil;
         this.isRunning = true;
         
         try {
             // Show initial loading state
-            if (loadingManager) {
-                loadingManager.showInlineLoading('.backtest-config', 'Validating configuration...');
+            if (loadingUtil) {
+                loadingUtil.showInline('.backtest-config', 'Validating configuration...');
             }
             
             await new Promise(resolve => setTimeout(resolve, 300));
             
             const config = this.getBacktestConfig();
             
-            if (loadingManager) {
-                loadingManager.updateInlineLoadingMessage('.backtest-config', 'Preparing backtest environment...');
+            if (loadingUtil) {
+                loadingUtil.updateInline('.backtest-config', 'Preparing backtest environment...');
             }
             
             await new Promise(resolve => setTimeout(resolve, 200));
@@ -506,24 +506,24 @@ class BacktestPage {
             document.getElementById('backtest-progress').style.display = 'block';
             document.getElementById('backtest-results').style.display = 'none';
 
-            if (loadingManager) {
-                loadingManager.updateInlineLoadingMessage('.backtest-config', 'Starting backtest execution...');
+            if (loadingUtil) {
+                loadingUtil.updateInline('.backtest-config', 'Starting backtest execution...');
             }
             
             await new Promise(resolve => setTimeout(resolve, 200));
             
             const results = await this.executeBacktest(config);
             
-            if (loadingManager) {
-                loadingManager.updateInlineLoadingMessage('.backtest-config', 'Processing results...');
+            if (loadingUtil) {
+                loadingUtil.updateInline('.backtest-config', 'Processing results...');
             }
             
             await new Promise(resolve => setTimeout(resolve, 300));
             
             this.displayResults(results);
             
-            if (loadingManager) {
-                loadingManager.updateInlineLoadingMessage('.backtest-config', 'Backtest completed successfully!');
+            if (loadingUtil) {
+                loadingUtil.updateInline('.backtest-config', 'Backtest completed successfully!');
             }
             
             // Brief delay to show completion
@@ -533,16 +533,16 @@ class BacktestPage {
             console.error('Backtest error:', error);
             this.showNotification('Backtest failed: ' + error.message, 'error');
             
-            if (loadingManager) {
-                loadingManager.showError('.backtest-config', 'Backtest execution failed');
+            if (loadingUtil) {
+                loadingUtil.showError('.backtest-config', 'Backtest execution failed');
             }
         } finally {
             this.isRunning = false;
             document.getElementById('backtest-progress').style.display = 'none';
             
             // Hide loading state
-            if (loadingManager) {
-                loadingManager.hideInlineLoading('.backtest-config');
+            if (loadingUtil) {
+                loadingUtil.hideInline('.backtest-config');
             }
         }
     }
@@ -915,6 +915,10 @@ class BacktestPage {
     destroy() {
         // Cleanup when leaving page
         this.isRunning = false;
+        const loadingUtil = window.LoadingUtil;
+        if (loadingUtil) {
+            loadingUtil.hideInline('.backtest-config');
+        }
     }
 }
 

@@ -39,27 +39,71 @@ class GoldBreakoutScanner {
         this.priceUpdateInterval = null;
         this.candleUpdateInterval = null;
         
-        this.init();
+        // Initialization guard
+        this.initialized = false;
     }
 
     init() {
-        // Delay chart initialization to ensure library is loaded
+        // Always reflect initial disconnected status
+        this.updateConnectionStatus(false);
+
+        // If router is present, defer initialization until Home/Dashboard is rendered
+        const hasRouter = typeof window.GoldRadarRouter !== 'undefined';
+        if (hasRouter) {
+            const onRouteChanged = (event) => {
+                const detail = event && event.detail ? event.detail : {};
+                const route = detail.route || (window.location.hash ? window.location.hash.replace('#', '') : '');
+                if (route === '/home' || route === '/dashboard') {
+                    // Ensure chart container exists before initializing chart
+                    const chartContainer = document.getElementById('chart');
+                    if (!chartContainer) {
+                        const lm = window.LoadingManager;
+                        if (lm) {
+                            lm.showRetryError('.chart-container', 'Chart container not found', () => {
+                                // Retry by navigating to dashboard route
+                                window.location.hash = '#/dashboard';
+                            }, () => {
+                                lm.hideInlineLoading('.chart-container');
+                            });
+                        } else {
+                            console.warn('Chart container not found when initializing scanner.');
+                        }
+                        return; // Wait until container exists
+                    }
+
+                    if (this.initialized) {
+                        // Already initialized; remove listener and do nothing
+                        window.removeEventListener('routeChanged', onRouteChanged);
+                        return;
+                    }
+
+                    // Perform full initialization now that the page is ready
+                    this.initChart();
+                    this.setupEventListeners();
+                    this.startDataFeed();
+                    this.requestNotificationPermission();
+                    this.startLoops();
+                    this.initialized = true;
+
+                    // Stop listening after successful init
+                    window.removeEventListener('routeChanged', onRouteChanged);
+                }
+            };
+
+            // Listen for router to finish rendering the page
+            window.addEventListener('routeChanged', onRouteChanged);
+
+            return;
+        }
+
+        // Legacy fallback (no router): initialize immediately with slight delay
         setTimeout(() => {
             this.initChart();
         }, 100);
-        
         this.setupEventListeners();
         this.startDataFeed();
         this.requestNotificationPermission();
-        
-        // Update status
-        this.updateConnectionStatus(false);
-        
-        // Start high-frequency analysis loop for real-time updates (max 1 second latency)
-        setInterval(() => this.analyzeMarket(), 500); // Analyze every 0.5 seconds for instant detection
-        setInterval(() => this.updatePerformanceStats(), 1000); // Update stats every 1 second
-        setInterval(() => this.updateMarketInfo(), 250); // Update market info every 0.25 seconds
-        setInterval(() => this.detectPatterns(), 1000); // Pattern detection every 1 second
+        this.startLoops();
     }
 
     async initChart() {
@@ -216,6 +260,15 @@ class GoldBreakoutScanner {
                 loadingManager.hideInlineLoading('.chart-container');
             }
         }
+    }
+
+    // Start recurring analysis and UI update loops
+    startLoops() {
+        // Start high-frequency analysis loop for real-time updates (max 1 second latency)
+        setInterval(() => this.analyzeMarket(), 500); // Analyze every 0.5 seconds for instant detection
+        setInterval(() => this.updatePerformanceStats(), 1000); // Update stats every 1 second
+        setInterval(() => this.updateMarketInfo(), 250); // Update market info every 0.25 seconds
+        setInterval(() => this.detectPatterns(), 1000); // Pattern detection every 1 second
     }
 
     setupEventListeners() {
@@ -1206,10 +1259,4 @@ class GoldBreakoutScanner {
     }
 }
 
-// Initialize the application when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    const scanner = new GoldBreakoutScanner();
-    
-    // Make scanner globally available for debugging
-    window.goldScanner = scanner;
-});
+// Removed DOMContentLoaded instantiation to avoid duplicate scanner instances.

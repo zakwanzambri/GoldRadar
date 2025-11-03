@@ -216,6 +216,32 @@ class LoadingManager {
                 line-height: 1;
             }
 
+            .loading-error .error-actions {
+                display: inline-flex;
+                gap: 6px;
+                margin-left: 8px;
+            }
+
+            .loading-error .error-btn {
+                padding: 4px 8px;
+                font-size: 12px;
+                border-radius: 6px;
+                border: 1px solid var(--border-primary);
+                background: var(--bg-secondary);
+                color: var(--text-primary);
+                cursor: pointer;
+            }
+
+            .loading-error .error-btn.primary {
+                background: var(--accent-color);
+                color: #fff;
+                border-color: var(--accent-color);
+            }
+
+            .loading-error .error-btn.secondary {
+                background: var(--bg-primary);
+            }
+
             .loading-dots {
                 display: inline-flex;
                 gap: 2px;
@@ -525,7 +551,7 @@ class LoadingManager {
     }
 
     // Show an inline error state
-    showError(targetSelector, text = 'An error occurred') {
+    showError(targetSelector, text = 'An error occurred', options = {}) {
         const target = document.querySelector(targetSelector);
         if (!target) return null;
 
@@ -546,18 +572,65 @@ class LoadingManager {
                 target,
                 originalContent: target.innerHTML,
                 originalClasses: target.className,
-                type: 'inline-error'
+                type: 'inline-error',
+                actions: []
             });
         }
+
+        const actions = options.actions || [];
 
         target.innerHTML = `
             <span class="loading-error">
                 <span class="error-icon">⚠️</span>
-                ${text}
+                <span class="error-text">${text}</span>
+                ${actions.length ? `<span class="error-actions">${actions.map((a, idx) => `
+                    <button class="error-btn ${a.type || ''}" data-loader-id="${loaderId}" data-action-index="${idx}">${a.label || 'Action'}</button>
+                `).join('')}</span>` : ''}
             </span>
         `;
 
+        // Store callbacks and bind events
+        if (actions.length) {
+            const loader = this.activeLoaders.get(loaderId);
+            loader.actions = actions;
+            target.querySelectorAll('.error-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const actionIndex = parseInt(e.currentTarget.getAttribute('data-action-index'), 10);
+                    const action = loader.actions[actionIndex];
+                    if (!action) return;
+
+                    if (action.role === 'dismiss') {
+                        this.hideInlineLoading(loaderId);
+                        return;
+                    }
+                    if (typeof action.onClick === 'function') {
+                        try {
+                            action.onClick({ loaderId, target });
+                        } catch (err) {
+                            console.error('LoadingManager: error action handler failed', err);
+                        }
+                    }
+                });
+            });
+        }
+
         return loaderId;
+    }
+
+    // Convenience: show retry + dismiss error prompt
+    showRetryError(targetSelector, text, onRetry) {
+        return this.showError(targetSelector, text, {
+            actions: [
+                { label: 'Retry', type: 'primary', role: 'retry', onClick: ({ loaderId }) => {
+                    try {
+                        if (typeof onRetry === 'function') onRetry({ loaderId });
+                    } finally {
+                        // Keep error visible until retry completes; caller can hide on success
+                    }
+                } },
+                { label: 'Dismiss', type: 'secondary', role: 'dismiss' }
+            ]
+        });
     }
 
     // Utility method to wrap async operations with loading

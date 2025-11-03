@@ -316,7 +316,7 @@ class HomePage {
     }
 
     async initializeChart() {
-        const loadingManager = window.LoadingManager;
+        const loadingUtil = window.LoadingUtil;
         
         try {
             const chartContainer = document.getElementById('chart');
@@ -332,16 +332,16 @@ class HomePage {
             }
 
             // Show chart loading state
-            if (loadingManager) {
-                loadingManager.showInlineLoading('.chart-container', 'Initializing chart...');
+            if (loadingUtil) {
+                loadingUtil.showInline('.chart-container', 'Initializing chart...');
             }
 
             // Simulate loading delay for chart initialization
             await new Promise(resolve => setTimeout(resolve, 800));
 
             // Update loading message
-            if (loadingManager) {
-                loadingManager.updateInlineLoadingMessage('.chart-container', 'Creating chart instance...');
+            if (loadingUtil) {
+                loadingUtil.updateInline('.chart-container', 'Creating chart instance...');
             }
 
             this.chart = LightweightCharts.createChart(chartContainer, {
@@ -373,8 +373,8 @@ class HomePage {
             });
 
             // Update loading message
-            if (loadingManager) {
-                loadingManager.updateInlineLoadingMessage('.chart-container', 'Adding chart series...');
+            if (loadingUtil) {
+                loadingUtil.updateInline('.chart-container', 'Adding chart series...');
             }
 
             this.candlestickSeries = this.chart.addCandlestickSeries({
@@ -406,31 +406,31 @@ class HomePage {
 
         } catch (error) {
             console.error('HomePage: Chart initialization failed:', error);
-            if (loadingManager) {
-                loadingManager.showError('.chart-container', 'Failed to initialize chart');
+            if (loadingUtil) {
+                loadingUtil.showError('.chart-container', 'Failed to initialize chart');
             }
         } finally {
             // Hide loading state
-            if (loadingManager) {
-                loadingManager.hideInlineLoading('.chart-container');
+            if (loadingUtil) {
+                loadingUtil.hideInline('.chart-container');
             }
         }
     }
 
     async loadChartData() {
-        const loadingManager = window.LoadingManager;
+        const loadingUtil = window.LoadingUtil;
         
         try {
             // Update loading message for data loading
-            if (loadingManager) {
-                loadingManager.updateInlineLoadingMessage('.chart-container', 'Loading historical data...');
+            if (loadingUtil) {
+                loadingUtil.updateInline('.chart-container', 'Loading historical data...');
             }
 
             // Simulate loading chart data with progress updates
             await new Promise(resolve => setTimeout(resolve, 300));
             
-            if (loadingManager) {
-                loadingManager.updateInlineLoadingMessage('.chart-container', 'Processing market data...');
+            if (loadingUtil) {
+                loadingUtil.updateInline('.chart-container', 'Processing market data...');
             }
             
             await new Promise(resolve => setTimeout(resolve, 200));
@@ -438,8 +438,8 @@ class HomePage {
             // Generate sample data for demonstration
             const data = this.generateSampleData();
             
-            if (loadingManager) {
-                loadingManager.updateInlineLoadingMessage('.chart-container', 'Rendering chart data...');
+            if (loadingUtil) {
+                loadingUtil.updateInline('.chart-container', 'Rendering chart data...');
             }
             
             if (this.candlestickSeries && data.length > 0) {
@@ -451,18 +451,18 @@ class HomePage {
             
         } catch (error) {
             console.error('HomePage: Failed to load chart data:', error);
-            if (loadingManager) {
-                loadingManager.showError('.chart-container', 'Failed to load chart data');
+            if (loadingUtil) {
+                loadingUtil.showError('.chart-container', 'Failed to load chart data');
             }
         }
     }
 
     async startRealTimeUpdatesWithLoading() {
-        const loadingManager = window.LoadingManager;
+        const loadingUtil = window.LoadingUtil;
         
         try {
-            if (loadingManager) {
-                loadingManager.updateInlineLoadingMessage('.chart-container', 'Starting real-time updates...');
+            if (loadingUtil) {
+                loadingUtil.updateInline('.chart-container', 'Starting real-time updates...');
             }
 
             // Simulate connection setup delay
@@ -471,8 +471,8 @@ class HomePage {
             // Start the actual real-time updates
             this.startRealTimeUpdates();
 
-            if (loadingManager) {
-                loadingManager.updateInlineLoadingMessage('.chart-container', 'Chart ready!');
+            if (loadingUtil) {
+                loadingUtil.updateInline('.chart-container', 'Chart ready!');
             }
 
             // Brief delay to show "ready" message
@@ -480,8 +480,8 @@ class HomePage {
 
         } catch (error) {
             console.error('HomePage: Failed to start real-time updates:', error);
-            if (loadingManager) {
-                loadingManager.showError('.chart-container', 'Failed to start real-time updates');
+            if (loadingUtil) {
+                loadingUtil.showError('.chart-container', 'Failed to start real-time updates');
             }
         }
     }
@@ -538,12 +538,12 @@ class HomePage {
     }
 
     async updateMarketData() {
-        const loadingManager = window.LoadingManager;
+        const loadingUtil = window.LoadingUtil;
         
         try {
             // Show inline loading for market data sections
-            if (loadingManager) {
-                loadingManager.showInlineLoading('.market-status .card-content', 'Updating market data...');
+            if (loadingUtil) {
+                loadingUtil.showInline('.market-status .card-content', 'Updating market data...');
             }
 
             // Use existing update function if available
@@ -593,8 +593,8 @@ class HomePage {
             console.error('Error updating market data:', error);
         } finally {
             // Hide inline loading
-            if (loadingManager) {
-                loadingManager.hideInlineLoading('.market-status .card-content');
+            if (loadingUtil) {
+                loadingUtil.hideInline('.market-status .card-content');
             }
         }
     }
@@ -718,6 +718,16 @@ class HomePage {
         // Cleanup when leaving page
         if (this.goldScanner) {
             this.goldScanner.stopRealTimeUpdates();
+        }
+        // Hide any lingering inline loaders
+        const loadingUtil = window.LoadingUtil;
+        if (loadingUtil) {
+            loadingUtil.hideInline('.chart-container');
+            loadingUtil.hideInline('.market-status .card-content');
+        }
+        if (this.updateInterval) {
+            clearInterval(this.updateInterval);
+            this.updateInterval = null;
         }
     }
 }

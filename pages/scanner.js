@@ -260,7 +260,7 @@ class ScannerPage {
         const startBtn = document.getElementById('start-scan');
         const stopBtn = document.getElementById('stop-scan');
         const statusText = document.getElementById('scan-status-text');
-        const loadingManager = window.LoadingManager;
+        const loadingUtil = window.LoadingUtil;
 
         if (startBtn) startBtn.disabled = true;
         if (stopBtn) stopBtn.disabled = false;
@@ -268,8 +268,8 @@ class ScannerPage {
 
         try {
             // Show loading for scan initialization
-            if (loadingManager) {
-                loadingManager.showInlineLoading('.scan-status .status-display', 'Initializing scanner...');
+            if (loadingUtil) {
+                loadingUtil.showInline('.scan-status .status-display', 'Initializing scanner...');
             }
 
             // Simulate scanner initialization
@@ -278,8 +278,8 @@ class ScannerPage {
             if (statusText) statusText.textContent = 'Scanning for breakouts...';
 
             // Hide initialization loading
-            if (loadingManager) {
-                loadingManager.hideInlineLoading('.scan-status .status-display');
+            if (loadingUtil) {
+                loadingUtil.hideInline('.scan-status .status-display');
             }
 
             // Start scanning process
@@ -289,8 +289,8 @@ class ScannerPage {
 
         } catch (error) {
             console.error('Error starting scanner:', error);
-            if (loadingManager) {
-                loadingManager.hideInlineLoading('.scan-status .status-display');
+            if (loadingUtil) {
+                loadingUtil.hideInline('.scan-status .status-display');
             }
             this.stopScanning();
         }
@@ -353,12 +353,12 @@ class ScannerPage {
     }
 
     async addScanResultWithLoading(result) {
-        const loadingManager = window.LoadingManager;
+        const loadingUtil = window.LoadingUtil;
         const resultsContainer = document.getElementById('results-container');
 
-        if (loadingManager && resultsContainer) {
+        if (loadingUtil && resultsContainer) {
             // Show brief loading for new result
-            loadingManager.showInlineLoading('#results-container', 'Adding new result...');
+            loadingUtil.showInline('#results-container', 'Adding new result...');
             
             // Simulate processing time
             await new Promise(resolve => setTimeout(resolve, 300));
@@ -367,7 +367,7 @@ class ScannerPage {
             this.addScanResult(result);
             
             // Hide loading
-            loadingManager.hideInlineLoading('#results-container');
+            loadingUtil.hideInline('#results-container');
         } else {
             // Fallback to original method
             this.addScanResult(result);
@@ -455,15 +455,15 @@ class ScannerPage {
     }
 
     async updatePatternAnalysis() {
-        const loadingManager = window.LoadingManager;
+        const loadingUtil = window.LoadingUtil;
         const patternGrid = document.querySelector('.pattern-grid');
         
         if (!patternGrid) return;
 
         try {
             // Show loading for pattern analysis
-            if (loadingManager) {
-                loadingManager.showInlineLoading('.pattern-analysis', 'Analyzing patterns with AI...');
+            if (loadingUtil) {
+                loadingUtil.showInline('.pattern-analysis', 'Analyzing patterns with AI...');
             }
 
             // Simulate AI processing time
@@ -489,14 +489,14 @@ class ScannerPage {
             `).join('');
 
             // Hide loading
-            if (loadingManager) {
-                loadingManager.hideInlineLoading('.pattern-analysis');
+            if (loadingUtil) {
+                loadingUtil.hideInline('.pattern-analysis');
             }
 
         } catch (error) {
             console.error('Error updating pattern analysis:', error);
-            if (loadingManager) {
-                loadingManager.hideInlineLoading('.pattern-analysis');
+            if (loadingUtil) {
+                loadingUtil.hideInline('.pattern-analysis');
             }
         }
     }
@@ -520,6 +520,13 @@ class ScannerPage {
             clearInterval(this.scanInterval);
         }
         this.stopScanning();
+        // Cleanup any inline loaders on this page
+        const loadingUtil = window.LoadingUtil;
+        if (loadingUtil) {
+            loadingUtil.hideInline('.scan-status .status-display');
+            loadingUtil.hideInline('#results-container');
+            loadingUtil.hideInline('.pattern-analysis');
+        }
     }
 }
 
