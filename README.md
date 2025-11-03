@@ -39,7 +39,7 @@ Sistem pemindaian breakout automatik untuk XAU/USD dengan analisis teknikal masa
 - Kadar kejayaan dan pulangan purata
 - Pilihan tarikh mula dan akhir
 
-## 🚀 Cara Menggunakan
+## 🚀 Cara Menggunakan (Quick Start)
 
 ### 1. Setup Projek
 ```bash
@@ -49,14 +49,18 @@ cd GoldRadar
 # Install dependencies (opsional untuk development server)
 npm install
 
-# Jalankan server development
+# Jalankan SPA server (Python)
+python server.py
+
+# Alternatif: server development (Node)
 npm run dev
 ```
 
 ### 2. Buka Browser
 - Buka `index.html` terus dalam browser, atau
 - Gunakan `npm run dev` untuk server development
-- Akses di `http://localhost:3000`
+- Akses di `http://localhost:8000` (Python SPA)
+- Alternatif Node dev server: `http://localhost:3000`
 
 ### 3. Konfigurasi Alert
 1. Aktifkan/nyahaktif alert menggunakan toggle
@@ -69,7 +73,7 @@ npm run dev
 3. Lihat signal terkini di panel kanan
 4. Gunakan kawalan chart untuk zoom dan auto-scale
 
-## 🛠️ Struktur Projek
+## 🛠️ Struktur Projek & Routes
 
 ```
 GoldRadar/
@@ -77,15 +81,28 @@ GoldRadar/
 ├── styles.css          # Styling CSS
 ├── script.js           # Logik JavaScript utama
 ├── package.json        # Dependencies dan scripts
-└── README.md          # Dokumentasi projek
+├── styles/             # Styling tambahan (navigation.css)
+├── components/         # Komponen UI (navigation, loading)
+├── pages/              # Halaman: dashboard, scanner, alerts, backtest, about
+├── router.js           # Routing SPA
+├── server.py           # Server SPA Python (port 8000)
+└── README.md           # Dokumentasi projek
+
+### Routes Utama
+- `#/dashboard` — Dashboard ringkas
+- `#/scanner` — Status pemindaian dan metrik
+- `#/alerts` — Senarai alert
+- `#/backtest` — Analisis sejarah
+- `#/about` — Maklumat projek
 ```
 
-## 🔧 Teknologi Digunakan
+## 🔧 Teknologi Digunakan & Tema
 
 - **Frontend**: HTML5, CSS3, JavaScript (ES6+)
 - **Chart Library**: TradingView Lightweight Charts
 - **Icons**: Font Awesome 6
 - **Styling**: CSS Grid, Flexbox, Backdrop Filter
+- **Tema**: Light/Dark — toggle di header; warna accent `--accent-color` (emas, #ffd700)
 - **Notifications**: Web Notifications API
 - **Audio**: Web Audio API
 
@@ -173,7 +190,12 @@ Maximum: 95%
 
 🔒 **Keselamatan**: Jangan kongsi API keys atau maklumat sensitif dalam kod. Gunakan environment variables untuk production.
 
-📊 **Prestasi**: Sistem dioptimumkan untuk 200 candle terkini. Data lama akan dibuang automatik untuk prestasi yang baik.
+📊 **Prestasi**: Sistem dioptimumkan untuk SPA statik; data simulasi digunakan untuk demo. 
+Untuk production, tambah backend/API dan proses build.
+
+## 🗒️ Release Info
+- Versi: `0.1.0`
+- Ringkasan: Penambahbaikan keterbacaan nav (light mode), penjajaran teks status di scanner, dan polish mudah alih (saiz sentuhan, kontras).
 
 ## 🤝 Sumbangan
 

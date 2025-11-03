@@ -1,6 +1,6 @@
 {
   "name": "gold-breakout-scanner",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "Real-time XAU/USD breakout detection and analysis tool",
   "main": "index.html",
   "scripts": {
